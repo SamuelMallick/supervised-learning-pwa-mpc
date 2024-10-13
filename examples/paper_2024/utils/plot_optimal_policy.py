@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.append(os.getcwd())
-from examples.Mayne_2003.simple_2D.model import Model
-from rollout.utils.plotting import plot_polytope
+from examples.paper_2024.model import Model
+from slpwampc.misc.regions import Polytope
 
-N = 8
+N = 5
 system = Model.get_system()
 
 with open(
-    f"examples/Mayne_2003/simple_2D/results/optimal_policy_N_{N}_samples_Tset.pkl",
+    f"examples/paper_2024/results/optimal_policy_N_{N}_samples_Tset.pkl",
     "rb",
 ) as file:
     data = pickle.load(file)
@@ -21,7 +21,8 @@ with open(
     actions_opt = data["a"]
 
 fig, ax = plt.subplots()
-plot_polytope(ax, system.D, system.E, color="white", lw=2)
+p = Polytope(system.D, system.E)
+p.plot(ax)
 for o in np.unique(actions_opt):
     idx = np.where(np.array(actions_opt) == o)
     ax.scatter(

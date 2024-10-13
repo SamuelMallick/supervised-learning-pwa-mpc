@@ -31,14 +31,14 @@ pwa_sys.u.min = -u_lim;
 pwa_sys.u.max = u_lim;
 
 % cost
-pwa_sys.x.penalty = QuadFunction(diag([1, 1]));
-pwa_sys.u.penalty = QuadFunction(1);
+pwa_sys.x.penalty = OneNormFunction(diag([1, 1]));
+pwa_sys.u.penalty = OneNormFunction(1);
 
 % terminal ingredients
 sys1.u.min = -u_lim;
 sys1.u.max = u_lim;
-sys1.x.penalty = QuadFunction(diag([1, 1]));
-sys1.u.penalty = QuadFunction(1);
+sys1.x.penalty = OneNormFunction(diag([1, 1]));
+sys1.u.penalty = OneNormFunction(1);
 Tset = sys1.LQRSet;
 Tcost = sys1.LQRPenalty;
 sys1.x.with('setConstraint');
@@ -53,10 +53,16 @@ pwa_sys.x.terminalSet = Tset;
 % pwa_sys.x.with('terminalPenalty');
 % pwa_sys.x.terminalPenalty = Tcost;
 
-mpc = MPCController(pwa_sys, 8);
-exp_mpc = mpc.toExplicit();
-exp_mpc.partition.plot()
-hold on
-% Tset.plot('color', 'blue', 'alpha', 1)
-xlim([-8, 10]);
-ylim([-12, 12]);
+times = [];
+num_partitions = [];
+for N = 9:12
+    mpc = MPCController(pwa_sys, N);
+    t0 = tic();
+    exp_mpc = mpc.toExplicit();
+    runtime = toc(t0);
+    nr = exp_mpc.nr;
+    num_partitions = [num_partitions, nr];
+    times = [times, runtime];
+    save("exp_mpc"+string(N)+".mat", "exp_mpc", "runtime", "nr")
+end
+

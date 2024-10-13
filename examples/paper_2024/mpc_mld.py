@@ -1,6 +1,6 @@
 import gurobipy as gp
 import numpy as np
-from slpwampc.mpc.mpc_mld import MpcMld
+from dmpcpwa.mpc.mpc_mld import MpcMld
 
 
 class ThisMpcMld(MpcMld):
@@ -58,7 +58,14 @@ class ThisTightenedMpcMld(ThisMpcMld):
     """A mixed-integer MPC for a PWA system with MLD model. The first state constraint is tightened."""
 
     def __init__(
-        self, system: dict, N: int, nx: int, nu: int, eps: float, X_f: tuple[np.ndarray, np.ndarray] | None = None, verbose: bool = False
+        self,
+        system: dict,
+        N: int,
+        nx: int,
+        nu: int,
+        eps: float,
+        X_f: tuple[np.ndarray, np.ndarray] | None = None,
+        verbose: bool = False,
     ) -> None:
         """Initialize the MPC,
 

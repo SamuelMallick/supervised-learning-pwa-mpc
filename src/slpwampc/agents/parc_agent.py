@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from dmpcpwa.mpc.mpc_mld import MpcMld
-from slpwampc.core.parc import Parc
+from gymnasium import Env
 
+from slpwampc.core.parc import Parc
 from slpwampc.core.systems import PwaSystem
 from slpwampc.misc.action_mapping import PwaActionMapper
 from slpwampc.misc.regions import Polytope
@@ -59,15 +60,86 @@ class ParcAgent:
         )
         # len(system.A)**N
 
-    def evaluate(self):  # TODO implement
-        raise NotImplementedError()
+    def get_switching_sequence(self, x: np.ndarray) -> np.ndarray | None:
+        """Get the switching sequence for a given state.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            The state.
+
+        Returns
+        -------
+        np.ndarray | None
+            The switching sequence or none if out of feasible set."""
+        pred = self.parc.predict(x.T)[0]
+        if pred == -1:
+            return None
+        else:
+            return self.action_mapper.get_action_from_label(pred)[0]
+
+    def evaluate(
+        self,
+        env: Env,
+        num_episodes: int,
+        seed: int = 0,
+        use_learned_policy: bool = True,
+    ) -> tuple[np.ndarray, np.ndarray, list[np.ndarray]]:
+        """Evaluate the policy in the environment.
+
+        Parameters
+        ----------
+        env : Env
+            The environment.
+        num_episodes : int
+            The number of episodes.
+        seed : int, optional
+            The seed for reseting environment, by default 0.
+        use_learned_policy : bool, optional
+            If true the learned policy selects the switching sequences, otherwise the mixed-integer MPC is used, by default True.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray, list[np.ndarray]]
+            The costs, initial states, and solve times for each episode.
+        """
+        costs = np.zeros(num_episodes)
+        states = np.zeros((num_episodes, self.nx))
+        times: list[np.ndarray] = []
+        for i in range(num_episodes):
+            x, _ = env.reset(seed=seed + i)
+            previous_seq = None
+            states[i] = x.squeeze()
+            truncated, terminated, timestep = False, False, 0
+            solve_times: list[float] = []
+            while not truncated and not terminated:
+                if use_learned_policy:
+                    seq = self.get_switching_sequence(x)
+                    if seq is None:
+                        if previous_seq is None:
+                            raise ValueError(
+                                "Sequence returned for initial state not feasible."
+                            )
+                        else:
+                            raise ValueError(
+                                "Sequence returned not feasible - you need to implement step 5 in Algorithm 2."
+                            )
+                    u, info = self.mpc.solve_mpc_with_switching_sequence(x, seq)
+                else:
+                    u, info = self.mpc.solve_mpc(x)
+                solve_times.append(info["run_time"])
+                x, r, truncated, terminated, _ = env.step(u)
+                costs[i] += r
+                timestep += 1
+            times.append(np.array(solve_times))
+        return costs, states, times
 
     def train(
         self,
         initial_state_set: np.ndarray,
         plot: bool = False,
         interactive: bool = False,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, dict]:
         """Train the decision tree policy.
 
         Parameters
@@ -81,8 +153,8 @@ class ParcAgent:
 
         Returns
         -------
-        tuple[np.ndarray, np.ndarray]
-            The training data that generates the tree policy."""
+        tuple[np.ndarray, np.ndarray, dict]
+            The training data that generates the policy and an info dict."""
         if plot and self.nx > 3:
             raise ValueError("Plotting only supported for 2D and 3D.")
         if plot and interactive:
@@ -132,8 +204,10 @@ class ParcAgent:
 
             infeas_vertices = np.empty((0, self.nx, 1))
             all_vertices = np.empty((0, self.nx))
+            num_regions = 0
             for region in regions:
                 if not region.is_empty:
+                    num_regions += 1
                     vertices = region.V
                     label = region.label
                     all_vertices = np.vstack((all_vertices, vertices))
@@ -179,6 +253,7 @@ class ParcAgent:
 
             if plot:
                 self.plot_iteration(
+                    iter,
                     self.nx == 2,
                     interactive,
                     regions,
@@ -192,7 +267,11 @@ class ParcAgent:
                 if plot:
                     plt.pause(1e5)
                     plt.ioff()
-                return state_train_set, action_train_set
+                return (
+                    state_train_set,
+                    action_train_set,
+                    {"iters": iter, "num_regions": num_regions},
+                )
             iter += 1
 
     def generate_supervised_learning_data(
@@ -215,7 +294,7 @@ class ParcAgent:
             # print(f"evaluating optimal action for state {idx} of {x.shape[0]}")
             if self.learn_infeasible_regions:
                 valid_states.append(state)
-            optimal_action = self.get_switching_sequence_from_state(state)
+            optimal_action = self.get_switching_sequence_from_mpc(state)
             if optimal_action is not None:
                 if not self.learn_infeasible_regions:
                     valid_states.append(state)
@@ -229,7 +308,7 @@ class ParcAgent:
         optimal_actions = np.asarray(valid_actions).reshape(-1, 1)
         return optimal_states, optimal_actions
 
-    def get_switching_sequence_from_state(self, x: np.ndarray) -> np.ndarray | None:
+    def get_switching_sequence_from_mpc(self, x: np.ndarray) -> np.ndarray | None:
         """Get the switching sequence from a given state by solving the MPC problem.
 
         Parameters
@@ -256,55 +335,9 @@ class ParcAgent:
         else:
             return None
 
-    def get_oblique_label_map(
-        self, labels: np.ndarray
-    ) -> tuple[dict[int, int], np.ndarray]:
-        """Get a mapping from the original labels to the labels used in the oblique tree.
-
-        Parameters
-        ----------
-        labels : np.ndarray
-            The original labels.
-
-        Returns
-        -------
-        dict[int, int]
-            The mapping.
-        np.ndarray
-            The labels used in the oblique tree."""
-        unique_labels = list(np.unique(labels))
-        label_map = {idx: label for idx, label in enumerate(unique_labels)}
-        new_labels = np.array(
-            [unique_labels.index(label) for label in list(labels.squeeze())]
-        )
-        return label_map, new_labels
-
-    # def check_training_data(self, tree: ObliqueTree, x: np.ndarray, y: np.ndarray, plot: bool = False, ax: plt.axes = None) -> None:
-    #     """Check if the training data is correctly classified by the tree.
-
-    #     Parameters
-    #     ----------
-    #     x : np.ndarray
-    #         The states.
-    #     y : np.ndarray
-    #         The labels.
-    #     plot : bool, optional
-    #         If True, the incorrectly classified data is plotted, by default False.
-    #     ax : plt.axes, optional
-    #         The axes to plot on, by default None."""
-    #     y_pred = tree.predict(x)
-    #     if not np.all(y == y_pred):
-    #         print(f"{np.count_nonzero(y - y_pred)} training data is not correctly classified by the tree.")
-    #         # raise ValueError("Training data is not correctly classified by the tree.")
-    #         if plot and ax is not None:
-    #             for idx, (state, label, pred) in enumerate(zip(x, y, y_pred)):
-    #                 if label != pred:
-    #                     ax.plot(state[0], state[1], color="green", marker="o", markersize=10, linestyle="None")
-    #         pass
-    #     # print("Training data is correctly classified by the tree.")
-
     def plot_iteration(
         self,
+        iter: int,
         is_2D: bool,
         interactive: bool,
         regions: list[Polytope],
@@ -316,6 +349,8 @@ class ParcAgent:
 
         Parameters
         ----------
+        iter : int
+            The current iteration.
         is_2D : bool
             If true the plot is 2D, otherwise 3D.
         interactive : bool
@@ -334,7 +369,6 @@ class ParcAgent:
         self.ax.set_xlim(-21, 21)
         self.ax.set_ylim(-21, 21)
 
-        # self.check_training_data(state_train_set, odt_labels, plot=True, ax=self.ax)
         for label in unique_labels:
             self.ax.set_title(f"label: {label}")
             for region in [r for r in regions if not r.is_empty and r.label == label]:
@@ -390,8 +424,28 @@ class ParcAgent:
         # self.parc.plot_partition([-15, -15], [15, 15])
         # plt.show()
 
+        # if iter in [0, 10, 25]:
+        #     save2tikz(plt.gcf())
         if not interactive:
             plt.show()
         else:
             self.fig.canvas.draw()
             plt.pause(0.01)
+
+    def save(self, path: str) -> None:
+        """Save the predictor to a file.
+
+        Parameters
+        ----------
+        path : str
+            The path to the file."""
+        self.parc.save(path)
+
+    def load(self, path: str) -> None:
+        """Load the predictor from a file.
+
+        Parameters
+        ----------
+        path : str
+            The path to the file."""
+        self.parc.load(path)

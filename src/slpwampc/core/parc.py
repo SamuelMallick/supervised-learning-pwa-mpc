@@ -1,5 +1,6 @@
-from pyparc.parc import PARC
 import numpy as np
+from pyparc.parc import PARC
+
 from slpwampc.misc.regions import Polytope
 
 

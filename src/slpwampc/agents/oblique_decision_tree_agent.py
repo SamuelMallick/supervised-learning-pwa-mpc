@@ -1,14 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from dmpcpwa.mpc.mpc_mld import MpcMld
-from sklearn_oblique_tree.oblique import ObliqueTree
-
 from rollout.core.systems import PwaSystem
 from rollout.misc.action_mapping import PwaActionMapper
 from rollout.misc.regions import Polytope
 
 # from rollout.misc.regions import find_vertices
-from rollout.utils.plotting import plot_polytope
+from sklearn_oblique_tree.oblique import ObliqueTree
 
 
 class ObliqueDecisionTreeAgent:
@@ -208,10 +206,8 @@ class ObliqueDecisionTreeAgent:
                 print(f"Percentage of vertices infeas: {percentage_infeas}%")
 
                 if idx == 0 or percentage_infeas < best_percentage_infeas:
-                    best_tree = tree
                     best_regions = regions
                     best_infeas_vertices = infeas_vertices
-                    best_percentage_infeas = percentage_infeas
                     best_random_state = idx
 
             if plot:
@@ -354,7 +350,6 @@ class ObliqueDecisionTreeAgent:
                             markersize=10,
                             linestyle="None",
                         )
-            pass
         # print("Training data is correctly classified by the tree.")
 
     def plot_iteration(

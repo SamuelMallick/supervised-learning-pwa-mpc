@@ -50,7 +50,7 @@ class Polytope:
         color=None,
         alpha: float = 0.5,
         lw: float = 1,
-        ls: str = "dashed",
+        ls: str = "--",
     ) -> None:
         """Plot the polytope in 2D or 3D."""
         if len(self.A) == 0:

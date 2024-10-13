@@ -2,6 +2,7 @@ from itertools import product
 
 import numpy as np
 
+
 class PwaActionMapper:
     """A class that maps integer labels to sequences of specified PWA regions."""
 
@@ -24,11 +25,9 @@ class PwaActionMapper:
             The length of a switching sequence. Corresponds to MPC prediction horizon.
         """
         self.N = N
-        self.map = np.asarray(
-            list(product(range(l), repeat=N)), dtype=int
-        ).unsqueeze(
-            -1
-        )  # all possible switching sequences. Shape: (l^N, N, 1)  # TODO fix type error
+        self.map = np.asarray(list(product(range(l), repeat=N)), dtype=int)[
+            :, :, None
+        ]  # all possible switching sequences. Shape: (l^N, N, 1)  # TODO fix type error
         self._actions = [
             np.asarray(item).reshape(len(item), 1)
             for item in product(range(l), repeat=N)
@@ -50,7 +49,7 @@ class PwaActionMapper:
             raise ValueError(
                 f"Invalid action shape. Expected: (N, 1), got: {action.shape}."
             )
-        match = (self.map == action).all(dim=(1, 2)).to(dtype=int)
+        match = (self.map == action).all(axis=(1, 2)).astype(int)
         # match = (
         #     (self.map == torch.from_numpy(action)).all(dim=(1, 2)).to(dtype=int)
         # )  # see if action is in the map # TODO fix type error
@@ -75,7 +74,7 @@ class PwaActionMapper:
         """
         if (label >= len(self.map)).any():
             raise ValueError(f"Invalid label, out of bound {len(self.map)}.")
-        return self.map[label[:, 0]]
+        return self.map[label[:, 0].astype(int)]
 
     def get_valid_actions(self, region: int) -> list[np.ndarray]:
         """Get all valid actions for a given PWA region.

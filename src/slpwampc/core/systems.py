@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class PwaSystem:
     """Class to represent a piecewise affine system."""
 
@@ -27,3 +30,23 @@ class PwaSystem:
             self.region_depends_on_u = True
         else:
             self.region_depends_on_u = False
+
+    def next_state(self, x: np.ndarray, u: np.ndarray) -> tuple[np.ndarray, int]:
+        """Get the next state of the system given the current state and control input.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            The current state.
+        u : np.ndarray
+            The control input.
+
+        Returns
+        -------
+        tuple[np.ndarray, int]
+            The next state and the region index.
+        """
+        for i in range(len(self.S)):
+            if (self.S[i] @ x + self.R[i] @ u <= self.T[i]).all():
+                return self.A[i] @ x + self.B[i] @ u + self.c[i], i
+        raise ValueError("No region found for state and action")

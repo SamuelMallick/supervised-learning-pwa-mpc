@@ -84,6 +84,7 @@ class ParcAgent:
         num_episodes: int,
         seed: int = 0,
         use_learned_policy: bool = True,
+        K_term: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, list[np.ndarray]]:
         """Evaluate the policy in the environment.
 
@@ -97,6 +98,8 @@ class ParcAgent:
             The seed for reseting environment, by default 0.
         use_learned_policy : bool, optional
             If true the learned policy selects the switching sequences, otherwise the mixed-integer MPC is used, by default True.
+        K_term : np.ndarray, optional
+            An optional terminal controller, used to guarentee recursive feasibility.
 
         Returns
         -------
@@ -121,10 +124,17 @@ class ParcAgent:
                                 "Sequence returned for initial state not feasible."
                             )
                         else:
-                            raise ValueError(
-                                "Sequence returned not feasible - you need to implement step 5 in Algorithm 2."
+                            x_N = info["x"][
+                                :, -1
+                            ]  # terminal state from previous iteration
+                            _, shifted_region = self.system.next_state(
+                                x_N, K_term @ x_N
                             )
+                            seq = np.vstack((previous_seq[1:], shifted_region))
                     u, info = self.mpc.solve_mpc_with_switching_sequence(x, seq)
+                    if info["cost"] == float("inf"):
+                        raise ValueError("Infeasible problem encountered.")
+                    previous_seq = seq
                 else:
                     u, info = self.mpc.solve_mpc(x)
                 solve_times.append(info["run_time"])
@@ -185,8 +195,6 @@ class ParcAgent:
             action_train_set = np.vstack((action_train_set, optimal_actions))
             print(f"Fitting parc with {state_train_set.shape[0]} samples.")
 
-            # self.parc.K = 2*len(np.unique(action_train_set))
-            # self.parc.K = state_set.shape[0]
             self.parc.fit(state_train_set, action_train_set.ravel(), categorical=[True])
 
             regions = self.parc.get_partition(self.system.D, self.system.E)

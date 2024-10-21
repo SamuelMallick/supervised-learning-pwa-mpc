@@ -124,6 +124,8 @@ class ParcAgent:
                                 "Sequence returned for initial state not feasible."
                             )
                         else:
+                            if K_term is None:
+                                raise ValueError("Terminal controller not provided.")
                             x_N = info["x"][
                                 :, -1
                             ]  # terminal state from previous iteration

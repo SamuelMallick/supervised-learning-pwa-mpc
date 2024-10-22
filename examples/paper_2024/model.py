@@ -57,6 +57,8 @@ class Model:
         np.array([[1, 2, 2, 1, 6]]).T,
     )
 
+    K_term = np.array([[-0.564458476593388, -0.737832475861210]])
+
     @staticmethod
     def get_system_dict():
         return Model.system

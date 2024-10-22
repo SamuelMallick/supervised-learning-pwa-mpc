@@ -10,12 +10,12 @@ from slpwampc.agents.parc_agent import ParcAgent
 warnings.filterwarnings("ignore")
 
 np_random = np.random.default_rng(0)
-np.random.seed(2)
+np.random.seed(0)
 
 SAVE = True
 first_region_from_policy = False
 
-N = 11  # prediction horizon
+N = 12  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu

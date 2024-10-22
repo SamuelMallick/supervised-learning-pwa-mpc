@@ -6,14 +6,13 @@ from model import Model
 from mpc_mld import ThisMpcMld
 
 from slpwampc.agents.parc_agent import ParcAgent
-from slpwampc.utils.tikz import save2tikz
 
 np_random = np.random.default_rng(0)
 np.random.seed(2)
 
 GENERATE = False  # if false we just plot from already saved data
 
-N = 10  # prediction horizon
+N = 12  # prediction horizon
 
 nx, nu = Model.nx, Model.nu
 system = Model.get_system()
@@ -30,7 +29,7 @@ agent.load(f"examples/paper_2024/results/parc_agent_N_{N}")
 
 if GENERATE:
     initial_state_samples = Model.sample_state_space(
-        d=1, np_random=np_random, sample_strategy="random", num_points=2000
+        d=0.1, np_random=np_random, sample_strategy="grid", num_points=2000
     )
     states = []
     costs_opt = []

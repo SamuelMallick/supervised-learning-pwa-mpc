@@ -5,7 +5,7 @@ import gymnasium
 import numpy as np
 from gymnasium.wrappers import TimeLimit
 from model import Model
-from mpc_mld import ThisMpcMld
+from mpc_mld import ThisMpcMld, ThisPwaMpc
 from mpcrl.wrappers.envs import MonitorEpisodes
 
 from slpwampc.agents.parc_agent import ParcAgent
@@ -108,6 +108,7 @@ system = Model.get_system()
 system_dict = Model.get_system_dict()
 
 mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
+mpc_fixed_sequences = ThisPwaMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
     mpc,
@@ -121,7 +122,11 @@ env = MonitorEpisodes(
     TimeLimit(PwaEnv(system, viable_first_state_function=func), sim_length)
 )
 f, x, t = agent.evaluate(
-    env, num_episodes=num_episodes, seed=0, use_learned_policy=use_learned_policy
+    env,
+    num_episodes=num_episodes,
+    seed=1,
+    use_learned_policy=use_learned_policy,
+    K_term=Model.K_term,
 )
 
 X = [env.observations[i].squeeze() for i in range(num_episodes)]

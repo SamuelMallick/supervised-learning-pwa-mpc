@@ -1,8 +1,8 @@
 import pickle
-import numpy as np
-import matplotlib.pyplot as plt
 
-for N in range(5, 13):
+import numpy as np
+
+for N in range(12, 13):
     with open(f"examples/paper_2024/results/training_N_{N}.pkl", "rb") as f:
         data = pickle.load(f)
         print(f"Results for N={N}")
@@ -32,4 +32,8 @@ with open(
 print(f"Results for closed loop evaluation")
 print(f"Num episodes: {len(X_l)}")
 f = [100 * (sum(R_l[i]) - sum(R_o[i])) / sum(R_o[i]) for i in range(len(X_l))]
-pass
+print(f"mean {np.mean(f)}")
+print(f"std {np.std(f)}")
+print(f"min {min(f)}")
+print(f"max {max(f)}")
+print(f"median {np.median(f)}")

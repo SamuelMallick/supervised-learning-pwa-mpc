@@ -5,7 +5,7 @@ import gymnasium
 import numpy as np
 from gymnasium.wrappers import TimeLimit
 from model import Model
-from mpc_mld import ThisMpcMld, ThisPwaMpc
+from mpc_mld import ThisMpcMld
 from mpcrl.wrappers.envs import MonitorEpisodes
 
 from slpwampc.agents.parc_agent import ParcAgent
@@ -108,7 +108,6 @@ system = Model.get_system()
 system_dict = Model.get_system_dict()
 
 mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
-mpc_fixed_sequences = ThisPwaMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
     mpc,

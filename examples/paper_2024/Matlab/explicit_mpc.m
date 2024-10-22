@@ -26,7 +26,7 @@ X = Polyhedron('A', Ax, 'b', bx);
 pwa_sys.x.with('setConstraint');
 pwa_sys.x.setConstraint = X;
 
-u_lim = 3;
+u_lim = 2;
 pwa_sys.u.min = -u_lim;
 pwa_sys.u.max = u_lim;
 
@@ -55,7 +55,7 @@ pwa_sys.x.terminalSet = Tset;
 
 times = [];
 num_partitions = [];
-for N = 9:12
+for N = 2:12
     mpc = MPCController(pwa_sys, N);
     t0 = tic();
     exp_mpc = mpc.toExplicit();

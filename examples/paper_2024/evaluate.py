@@ -111,7 +111,8 @@ mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
 time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
-    mixed_integer_mpc=time_varying_affine_mpc if use_learned_policy else mixed_integer_mpc,
+    mixed_integer_mpc=mixed_integer_mpc,
+    time_varying_affine_mpc=time_varying_affine_mpc,
     N=N,
     learn_infeasible_regions=True,
 )

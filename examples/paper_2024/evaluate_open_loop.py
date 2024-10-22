@@ -3,8 +3,8 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from model import Model
+from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 
-from mpc import TimeVaryingAffineMpc, MixedIntegerMpc
 from slpwampc.agents.parc_agent import ParcAgent
 
 np_random = np.random.default_rng(0)

@@ -3,8 +3,8 @@ import warnings
 
 import numpy as np
 from model import Model
+from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
-from mpc import MixedIntegerMpc, TimeVaryingAffineMpc, TightenedMixedIntegerMpc
 from slpwampc.agents.parc_agent import ParcAgent
 
 warnings.filterwarnings("ignore")

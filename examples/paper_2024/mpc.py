@@ -68,7 +68,7 @@ class TimeVaryingAffineMpc(PwaMpc):
             PwaRegion(
                 A=system["A"][i],
                 B=system["B"][i],
-                c=system["c"][i][:, 0], # TODO request to avoid this in csnlp
+                c=system["c"][i][:, 0],  # TODO request to avoid this in csnlp
                 S=cs.horzcat(system["S"][i], system["R"][i]),
                 T=system["T"][i][:, 0],
             )
@@ -81,10 +81,8 @@ class TimeVaryingAffineMpc(PwaMpc):
         if X_f is not None:
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
-        self.minimize(
-            cs.norm_1(x) + cs.norm_1(u)
-        )
-        self.init_solver(solver_options["qrqp"], solver="qrqp")  # clp
+        self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
+        self.init_solver(solver_options["ipopt"], solver="ipopt")  # clp
 
 
 class MixedIntegerMpc(PwaMpc):

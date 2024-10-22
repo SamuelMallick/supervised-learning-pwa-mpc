@@ -129,6 +129,7 @@ class ParcAgent:
             truncated, terminated, timestep = False, False, 0
             solve_times: list[float] = []
             while not truncated and not terminated:
+                print(f"timestep {timestep}")  
                 if use_learned_policy:
                     seq = self.get_switching_sequence(x)
                     if seq is None:

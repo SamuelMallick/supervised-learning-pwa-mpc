@@ -32,7 +32,7 @@ solver_options = {
     "qpoases": {
         "print_time": False,
         "record_time": True,
-        "error_on_fail": True,
+        "error_on_fail": False,
         "printLevel": "none",
         "jit": True,
     },
@@ -44,6 +44,29 @@ solver_options = {
             "OutputFlag": 0,
             "LogToConsole": 0,
         },
+    },
+    "bonmin": {
+        "print_time": False,
+        "record_time": True,
+        "error_on_fail": False,
+        "bonmin": {
+            "print_level": 0,
+            "max_iter": 1000,
+        },
+    },
+    "knitro": {
+        "print_time": False,
+        "record_time": True,
+        "error_on_fail": False,
+        "knitro": {
+            "outlev": 0,
+            "maxit": 1000,
+        },
+    },
+    "clp": {
+        "print_time": False,
+        "record_time": True,
+        "error_on_fail": False,
     },
 }
 
@@ -82,7 +105,7 @@ class TimeVaryingAffineMpc(PwaMpc):
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
         self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
-        self.init_solver(solver_options["ipopt"], solver="ipopt")  # clp
+        self.init_solver(solver_options["clp"], solver="clp")  # clp
 
 
 class MixedIntegerMpc(PwaMpc):
@@ -120,8 +143,8 @@ class MixedIntegerMpc(PwaMpc):
         if X_f is not None:
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
-        self.minimize(cs.norm_1(x) + cs.norm_1(u))
-        self.init_solver(solver_options["gurobi"], solver="gurobi")
+        self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
+        self.init_solver(solver_options["knitro"], solver="knitro")
 
 
 class TightenedMixedIntegerMpc(PwaMpc):
@@ -170,5 +193,5 @@ class TightenedMixedIntegerMpc(PwaMpc):
                 "<=",
                 -eps * np.linalg.norm(A, ord=1, axis=1, keepdims=True),
             )
-        self.minimize(cs.norm_1(x) + cs.norm_1(u))
+        self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
         self.init_solver(solver_options["gurobi"], solver="gurobi")

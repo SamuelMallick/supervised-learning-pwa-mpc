@@ -3,8 +3,8 @@ import warnings
 
 import numpy as np
 from model import Model
-from mpc_mld import ThisMpcMld, ThisTightenedMpcMld
 
+from mpc import MixedIntegerMpc, TimeVaryingAffineMpc, TightenedMixedIntegerMpc
 from slpwampc.agents.parc_agent import ParcAgent
 
 warnings.filterwarnings("ignore")
@@ -24,10 +24,10 @@ system_dict = Model.get_system_dict()
 # system.B = [np.array([[1], [1]]), np.array([[1], [1]])]
 # system_dict["B"] = system.B
 
-mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
-tighened_mpc = ThisTightenedMpcMld(
-    system_dict, N, nx, nu, 0.1, X_f=Model.X_f, verbose=False
-)
+mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
+time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
+tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.1, X_f=Model.X_f)
+
 # initial_state_samples = Model.sample_state_space(
 #     d=d, np_random=np_random, sample_strategy="grid"
 # )
@@ -37,8 +37,9 @@ initial_state_samples = Model.sample_state_space(
 
 agent = ParcAgent(
     system,
-    mpc,
-    N,
+    mixed_integer_mpc=mixed_integer_mpc,
+    time_varying_affine_mpc=time_varying_affine_mpc,
+    N=N,
     first_region_from_policy=first_region_from_policy,
     tightened_mpc=tighened_mpc,
     learn_infeasible_regions=True,

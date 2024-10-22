@@ -3,25 +3,26 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from model import Model
-from mpc_mld import ThisMpcMld
 
+from mpc import TimeVaryingAffineMpc, MixedIntegerMpc
 from slpwampc.agents.parc_agent import ParcAgent
 
 np_random = np.random.default_rng(0)
 np.random.seed(2)
 
-GENERATE = False  # if false we just plot from already saved data
+GENERATE = True  # if false we just plot from already saved data
 
-N = 12  # prediction horizon
+N = 10  # prediction horizon
 
 nx, nu = Model.nx, Model.nu
 system = Model.get_system()
 system_dict = Model.get_system_dict()
 
-mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
+mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
+time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
-    mpc,
+    mixed_integer_mpc,  # not important which mpc is passed here
     N,
     learn_infeasible_regions=True,
 )
@@ -37,18 +38,19 @@ if GENERATE:
     for i, x0 in enumerate(initial_state_samples):
         print(f"{i}/{len(initial_state_samples)}")
         x0 = x0.reshape(-1, 1)
-        _, info = agent.mpc.solve_mpc(state=x0, raises=False)
-        if info["cost"] < np.inf:
+        sol = mixed_integer_mpc.solve({"x_0": x0})
+        if sol.success:
             states.append(x0)
-            costs_opt.append(info["cost"])
+            costs_opt.append(sol.f)
             delta = agent.get_switching_sequence(x0)
             if delta is None:
                 costs_subopt.append(-1)
             else:
-                _, info = agent.mpc.solve_mpc_with_switching_sequence(
-                    x0, delta, raises=True
-                )
-                costs_subopt.append(info["cost"])
+                time_varying_affine_mpc.set_sequence(delta.flatten().tolist())
+                sol = time_varying_affine_mpc.solve({"x_0": x0})
+                if not sol.success:
+                    raise ValueError("Infeasible problem for the given delta.")
+                costs_subopt.append(sol.f)
     with open(f"examples/paper_2024/results/evaluate_open_loop_N_{N}.pkl", "wb") as f:
         pickle.dump(
             {"states": states, "costs_opt": costs_opt, "costs_subopt": costs_subopt}, f

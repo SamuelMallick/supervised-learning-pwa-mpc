@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from dmpcpwa.mpc.mpc_mld import MpcMld
+from csnlp.wrappers.mpc.pwa_mpc import PwaMpc
 from gymnasium import Env
 
 from slpwampc.core.parc import Parc
@@ -15,10 +15,11 @@ class ParcAgent:
     def __init__(
         self,
         system: PwaSystem,
-        mpc: MpcMld,
+        mixed_integer_mpc: PwaMpc,
+        time_varying_affine_mpc: PwaMpc,
         N: int,
         first_region_from_policy: bool = False,
-        tightened_mpc: MpcMld | None = None,
+        tightened_mpc: PwaMpc | None = None,
         learn_infeasible_regions: bool = False,
     ) -> None:
         """Initialize the agent.
@@ -41,11 +42,12 @@ class ParcAgent:
         self.nx = system.A[0].shape[0]
         self.nu = system.B[0].shape[1]
         self.action_mapper = PwaActionMapper(
-            len(system.A), N if first_region_from_policy else mpc.N - 1
+            len(system.A), N if first_region_from_policy else mixed_integer_mpc.prediction_horizon - 1
         )
         self.system = system
-        self.mpc = mpc
-        self.tightened_mpc = tightened_mpc if tightened_mpc is not None else mpc
+        self.mixed_integer_mpc = mixed_integer_mpc
+        self.time_varying_affine_mpc = time_varying_affine_mpc
+        self.tightened_mpc = tightened_mpc if tightened_mpc is not None else mixed_integer_mpc
         self.N = N
         self.first_region_from_policy = first_region_from_policy
         self.learn_infeasible_regions = learn_infeasible_regions
@@ -58,7 +60,6 @@ class ParcAgent:
             verbose=0,
             min_number=1,
         )
-        # len(system.A)**N
 
     def get_switching_sequence(self, x: np.ndarray) -> np.ndarray | None:
         """Get the switching sequence for a given state.
@@ -76,7 +77,15 @@ class ParcAgent:
         if pred == -1:
             return None
         else:
-            return self.action_mapper.get_action_from_label(pred)[0]
+            if self.first_region_from_policy:
+                return self.action_mapper.get_action_from_label(pred)[0]
+            else:
+                return np.concatenate(
+                    (
+                        np.array([[self.system.get_region(x)]]),
+                        self.action_mapper.get_action_from_label(pred)[0],
+                    )
+                )
 
     def evaluate(
         self,
@@ -110,6 +119,7 @@ class ParcAgent:
         states = np.zeros((num_episodes, self.nx))
         times: list[np.ndarray] = []
         for i in range(num_episodes):
+            print(f"Episode {i}/{num_episodes}")
             x, _ = env.reset(seed=seed + i)
             previous_seq = None
             states[i] = x.squeeze()
@@ -126,21 +136,20 @@ class ParcAgent:
                         else:
                             if K_term is None:
                                 raise ValueError("Terminal controller not provided.")
-                            x_N = info["x"][
+                            x_N = sol.vals["x"][
                                 :, -1
                             ]  # terminal state from previous iteration
                             _, shifted_region = self.system.next_state(
                                 x_N, K_term @ x_N
                             )
                             seq = np.vstack((previous_seq[1:], shifted_region))
-                    u, info = self.mpc.solve_mpc_with_switching_sequence(x, seq)
-                    if info["cost"] == float("inf"):
-                        raise ValueError("Infeasible problem encountered.")
+                    self.mixed_integer_mpc.set_sequence(seq.flatten().tolist())
                     previous_seq = seq
-                else:
-                    u, info = self.mpc.solve_mpc(x)
-                solve_times.append(info["run_time"])
-                x, r, truncated, terminated, _ = env.step(u)
+                sol = self.mixed_integer_mpc.solve({"x_0": x})
+                if not sol.success:
+                    raise ValueError("Infeasible problem encountered.")
+                solve_times.append(sol.stats["t_wall_total"])
+                x, r, truncated, terminated, _ = env.step((sol.vals["u"][:, 0]).toarray())
                 costs[i] += r
                 timestep += 1
             times.append(np.array(solve_times))
@@ -224,12 +233,8 @@ class ParcAgent:
 
                     if self.learn_infeasible_regions and label == -1:
                         for vertex in vertices:
-                            _, sol = self.tightened_mpc.solve_mpc(
-                                vertex.reshape(-1, 1),
-                                raises=False,
-                                try_again_if_infeasible=False,
-                            )
-                            if sol["cost"] != float("inf"):
+                            sol = self.mixed_integer_mpc.solve({"x_0": vertex.reshape(-1, 1)})
+                            if sol.success:
                                 infeas_vertices = np.vstack(
                                     (infeas_vertices, vertex.reshape(1, -1, 1))
                                 )
@@ -239,13 +244,15 @@ class ParcAgent:
                             self.action_mapper.get_action_from_label(
                                 np.asarray(label).reshape(1, 1)
                             )
-                        ).reshape(-1)
-
+                        ).reshape(-1, 1)
+                        
                         for vertex in vertices:
-                            _, sol = self.mpc.solve_mpc_with_switching_sequence(
-                                vertex.reshape(-1, 1), switching_sequence, raises=False
+                            _switching_sequence = switching_sequence if self.first_region_from_policy else np.vstack(
+                                (np.array([[self.system.get_region(vertex.reshape(-1, 1))]]), switching_sequence)
                             )
-                            if sol["cost"] == float("inf"):
+                            self.time_varying_affine_mpc.set_sequence(_switching_sequence.flatten().tolist())
+                            sol = self.time_varying_affine_mpc.solve({"x_0": vertex.reshape(-1, 1)})
+                            if not sol.success:
                                 infeas_vertices = np.vstack(
                                     (infeas_vertices, vertex.reshape(1, -1, 1))
                                 )
@@ -333,9 +340,9 @@ class ParcAgent:
         switching_sequence = np.zeros(
             (self.N if self.first_region_from_policy else self.N - 1, 1)
         )
-        _, sol = self.mpc.solve_mpc(x, raises=False, try_again_if_infeasible=False)
-        if sol["cost"] < float("inf"):
-            delta = sol["delta"]  # binary vars that represent PWA regions
+        sol = self.mixed_integer_mpc.solve({"x_0": x})
+        if sol.success:
+            delta = sol.vals['delta']  # binary vars that represent PWA regions
             switching_sequence = np.argmax(delta, axis=0).reshape(-1, 1)
             return (
                 switching_sequence

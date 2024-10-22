@@ -5,7 +5,7 @@ import gymnasium
 import numpy as np
 from gymnasium.wrappers import TimeLimit
 from model import Model
-from mpc_mld import ThisMpcMld, ThisPwaMpc
+from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 from mpcrl.wrappers.envs import MonitorEpisodes
 
 from slpwampc.agents.parc_agent import ParcAgent
@@ -107,12 +107,12 @@ nx, nu = Model.nx, Model.nu
 system = Model.get_system()
 system_dict = Model.get_system_dict()
 
-mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
-mpc_fixed_sequences = ThisPwaMpc(system_dict, N, X_f=Model.X_f)
+mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
+time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
-    mpc,
-    N,
+    mixed_integer_mpc=time_varying_affine_mpc if use_learned_policy else mixed_integer_mpc,
+    N=N,
     learn_infeasible_regions=True,
 )
 agent.load(f"examples/paper_2024/results/parc_agent_N_{N}")
@@ -124,7 +124,7 @@ env = MonitorEpisodes(
 f, x, t = agent.evaluate(
     env,
     num_episodes=num_episodes,
-    seed=1,
+    seed=0,
     use_learned_policy=use_learned_policy,
     K_term=Model.K_term,
 )

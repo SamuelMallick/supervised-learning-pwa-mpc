@@ -8,7 +8,7 @@ from slpwampc.agents.parc_agent import ParcAgent
 
 sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
-from examples.paper_2024.mpc_mld import ThisMpcMld
+from examples.paper_2024.mpc import ThisMpcMld
 from slpwampc.misc.action_mapping import PwaActionMapper
 
 np_random = np.random.default_rng(0)

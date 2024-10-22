@@ -2,8 +2,8 @@ import pickle
 
 import numpy as np
 from model import Model
-from mpc_mld import ThisMpcMld, ThisTightenedMpcMld
 
+from examples.paper_2024.mpc import ThisMpcMld, ThisTightenedMpcMld
 from slpwampc.agents.oblique_decision_tree_agent import ObliqueDecisionTreeAgent
 
 np_random = np.random.default_rng(0)

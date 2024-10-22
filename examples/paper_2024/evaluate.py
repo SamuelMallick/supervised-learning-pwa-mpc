@@ -123,7 +123,7 @@ env = MonitorEpisodes(
 f, x, t = agent.evaluate(
     env,
     num_episodes=num_episodes,
-    seed=1,
+    seed=0,
     use_learned_policy=use_learned_policy,
     K_term=Model.K_term,
 )

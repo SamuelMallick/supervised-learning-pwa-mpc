@@ -2,7 +2,7 @@ clc
 clear all
 
 exp_mpcs = {};
-for i=2:12
+for i=2:10
     o = load("exp_mpc"+string(i)+".mat");
     exp_mpcs{i-1} = o.exp_mpc;
     i

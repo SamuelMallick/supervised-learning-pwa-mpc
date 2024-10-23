@@ -34,24 +34,20 @@ pwa_sys.u.max = u_lim;
 pwa_sys.x.penalty = OneNormFunction(diag([1, 1]));
 pwa_sys.u.penalty = OneNormFunction(1);
 
-% terminal ingredients
-sys1.u.min = -u_lim;
-sys1.u.max = u_lim;
-sys1.x.penalty = OneNormFunction(diag([1, 1]));
-sys1.u.penalty = OneNormFunction(1);
-Tset = sys1.LQRSet;
-Tcost = sys1.LQRPenalty;
-sys1.x.with('setConstraint');
-sys1.x.setConstraint = R1;
-sys1.x.with('terminalSet');
-sys1.x.terminalSet = Tset;
-sys1.x.with('terminalPenalty');
-sys1.x.terminalPenalty = Tcost;
+% % terminal ingredients
+% sys1.u.min = -u_lim;
+% sys1.u.max = u_lim;
+% sys1.x.penalty = OneNormFunction(diag([1, 1]));
+% sys1.u.penalty = OneNormFunction(1);
+% Tset = sys1.LQRSet;
+% Tcost = sys1.LQRPenalty;
+A_ = [0.943554152340661, 0.126216752413879; -0.564458476593388, -0.737832475861210; 0.564458476593388, 0.737832475861210; 1, 0; -1, 0];
+b_ = [1; 2; 2; 1; 6];
+Tset = Polyhedron('A', A_, 'b', b_);
+
 
 pwa_sys.x.with('terminalSet');
 pwa_sys.x.terminalSet = Tset;
-% pwa_sys.x.with('terminalPenalty');
-% pwa_sys.x.terminalPenalty = Tcost;
 
 times = [];
 num_partitions = [];

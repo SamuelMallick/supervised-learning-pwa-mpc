@@ -50,3 +50,23 @@ class PwaSystem:
             if (self.S[i] @ x + self.R[i] @ u <= self.T[i]).all():
                 return self.A[i] @ x + self.B[i] @ u + self.c[i], i
         raise ValueError("No region found for state and action")
+
+    def get_region(self, x: np.ndarray) -> int:
+        """Get the region index for a given state.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            The state.
+
+        Returns
+        -------
+        int
+            The region index.
+        """
+        if self.region_depends_on_u:
+            raise ValueError("Region depends on control input")
+        for i in range(len(self.S)):  # TODO remove loop
+            if (self.S[i] @ x <= self.T[i]).all():
+                return i
+        raise ValueError("No region found for state")

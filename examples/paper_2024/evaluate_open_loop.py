@@ -8,9 +8,9 @@ from mpc_mld import ThisMpcMld
 from slpwampc.agents.parc_agent import ParcAgent
 
 np_random = np.random.default_rng(0)
-np.random.seed(2)
+np.random.seed(0)
 
-GENERATE = False  # if false we just plot from already saved data
+GENERATE = True  # if false we just plot from already saved data
 
 N = 12  # prediction horizon
 

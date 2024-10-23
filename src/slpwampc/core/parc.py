@@ -43,3 +43,52 @@ class Parc(PARC):
                     i += 1
             regions.append(Polytope(A_, b_))
         return regions
+
+
+class ParcEnsemble:
+    def __init__(
+        self,
+        num_classifiers: int,
+        regions: list[tuple[np.ndarray, np.ndarray]],
+        sigma: float = 5,
+        alpha: float = 1.0e2,
+        K: int = 15,
+    ):
+        # TODO check dimensions match for num classifiers and regions - or maybe just use regions
+        self.num_classifiers = num_classifiers
+        self.classifiers = [
+            Parc(
+                K=K,
+                alpha=alpha,
+                maxiter=150,
+                sigma=sigma,
+                separation="Softmax",
+                verbose=0,
+                min_number=1,
+            )
+            for _ in range(num_classifiers)
+        ]
+        self.regions = regions
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        for i, region in enumerate(self.regions):
+            A, b = region
+            if (A @ x.T <= b).all():
+                return self.classifiers[i].predict(x)
+        raise ValueError(f"No region found for state {x}")
+
+    def fit(self, i, X, Y, categorical=None):
+        self.classifiers[i].fit(X, Y, categorical=categorical)
+
+    def get_partition(self, i: int, A: np.ndarray, b: np.ndarray) -> list[Polytope]:
+        return self.classifiers[i].get_partition(
+            np.vstack((A, self.regions[i][0])), np.vstack((b, self.regions[i][1]))
+        )
+    
+    def save(self, filename: str):
+        for i, classifier in enumerate(self.classifiers):
+            classifier.save(f"{filename}_{i}")
+
+    def load(self, filename: str):
+        for i, classifier in enumerate(self.classifiers):
+            classifier.load(f"{filename}_{i}")

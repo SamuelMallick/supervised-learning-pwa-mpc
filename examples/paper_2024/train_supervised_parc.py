@@ -14,7 +14,7 @@ np.random.seed(1)
 
 SAVE = True
 
-N = 10  # prediction horizon
+N = 5  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu
@@ -25,7 +25,7 @@ system_dict = Model.get_system_dict()
 
 mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
 tighened_mpc = ThisTightenedMpcMld(
-    system_dict, N, nx, nu, 0.1, X_f=Model.X_f, verbose=False
+    system_dict, N, nx, nu, 0.01, X_f=Model.X_f, verbose=False
 )
 # initial_state_samples = Model.sample_state_space(
 #     d=d, np_random=np_random, sample_strategy="grid"

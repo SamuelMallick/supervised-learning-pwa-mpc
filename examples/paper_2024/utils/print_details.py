@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 
-for N in range(12, 13):
+for N in range(5, 13):
     with open(f"examples/paper_2024/results/training_N_{N}.pkl", "rb") as f:
         data = pickle.load(f)
         print(f"Results for N={N}")

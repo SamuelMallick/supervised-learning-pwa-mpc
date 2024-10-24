@@ -9,11 +9,11 @@ sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
 from slpwampc.misc.regions import Polytope
 
-N = 5
+N = 12
 system = Model.get_system()
 
 with open(
-    f"examples/paper_2024/results/optimal_policy_N_{N}_samples_Tset.pkl",
+    f"examples/paper_2024/results/optimal_policy_N_{N}_samples.pkl",
     "rb",
 ) as file:
     data = pickle.load(file)

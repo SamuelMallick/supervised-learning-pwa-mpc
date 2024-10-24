@@ -99,6 +99,7 @@ class ParcAgent:
         states = np.zeros((num_episodes, self.nx))
         times: list[np.ndarray] = []
         for i in range(num_episodes):
+            print(f"Episode {i}/{num_episodes}")
             x, _ = env.reset(seed=seed + i)
             previous_seq = None
             states[i] = x.squeeze()
@@ -172,6 +173,7 @@ class ParcAgent:
 
         state_sets = initial_state_sets
         iter = 0
+        finished_regions: list[int] = []
         while True:
             if plot and not interactive:
                 if self.nx == 2:
@@ -185,7 +187,7 @@ class ParcAgent:
             num_regions = 0
             num_infeasible_vertices = 0
             all_regions = []
-            for i in range(self.nr):  # TODO make in parallel???
+            for i in [j for j in range(self.nr) if j not in finished_regions]:  # TODO make in parallel???
                 optimal_states, optimal_actions = (
                     self.generate_supervised_learning_data(state_sets[i])
                 )
@@ -199,10 +201,12 @@ class ParcAgent:
                     i,
                     state_train_sets[i],
                     action_train_sets[i].ravel(),
+                    self.system.D, 
+                    self.system.E,
                     categorical=[True],
                 )
 
-                regions = self.parc.get_partition(i, self.system.D, self.system.E)
+                regions = self.parc.get_partition(i)
                 all_regions.extend(regions)
 
                 # label each region using the trained tree # TODO get labels directly from c code
@@ -263,6 +267,8 @@ class ParcAgent:
                     infeas_vertices = np.array(
                         list(set(map(tuple, infeas_vertices.squeeze(-1))))
                     )[:, :, None]
+                else:
+                    finished_regions.append(i)
                 percentage_infeas = (
                     infeas_vertices.shape[0] / all_vertices.shape[0] * 100
                 )
@@ -349,6 +355,21 @@ class ParcAgent:
             return switching_sequence
         else:
             return None
+        
+    def get_regions(self) -> list[Polytope]:
+        """Get the regions of the policy.
+
+        Returns
+        -------
+        list[Polytope]
+            The regions."""
+        regions = []
+        for i in range(self.nr):
+            regions.extend(
+                self.parc.get_partition(i)
+            )
+        return regions
+
 
     def plot_iteration(
         self,
@@ -463,4 +484,4 @@ class ParcAgent:
         ----------
         path : str
             The path to the file."""
-        self.parc.load(path)
+        self.parc.load(path, self.system.D, self.system.E)

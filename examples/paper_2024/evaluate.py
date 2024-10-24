@@ -94,8 +94,8 @@ class PwaEnv(gymnasium.Env):
         return x_new, r, False, terminated, {}
 
 
-np.random.seed(0)
-np_random = np.random.default_rng(0)
+np.random.seed(1)
+np_random = np.random.default_rng(1)
 SAVE = True
 
 num_episodes = 1000

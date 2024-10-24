@@ -51,7 +51,7 @@ pwa_sys.x.terminalSet = Tset;
 
 times = [];
 num_partitions = [];
-for N = 2:12
+for N = 11:12
     mpc = MPCController(pwa_sys, N);
     t0 = tic();
     exp_mpc = mpc.toExplicit();

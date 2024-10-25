@@ -9,11 +9,10 @@ from slpwampc.agents.parc_agent import ParcAgent
 
 warnings.filterwarnings("ignore")
 
-np_random = np.random.default_rng(0)
-np.random.seed(2)
+np_random = np.random.default_rng(1)
+np.random.seed(1)
 
 SAVE = True
-first_region_from_policy = False
 
 N = 11  # prediction horizon
 d = 2  # spacing for initial grid sampling
@@ -31,16 +30,18 @@ tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.1, X_f=Model.X_f)
 # initial_state_samples = Model.sample_state_space(
 #     d=d, np_random=np_random, sample_strategy="grid"
 # )
-initial_state_samples = Model.sample_state_space(
-    num_points=30, np_random=np_random, sample_strategy="random"
-)
+initial_state_samples = [
+    Model.sample_state_space(
+        num_points=15, np_random=np_random, sample_strategy="random", region=i
+    )
+    for i in range(2)
+]
 
 agent = ParcAgent(
     system,
     mixed_integer_mpc=mixed_integer_mpc,
     time_varying_affine_mpc=time_varying_affine_mpc,
     N=N,
-    first_region_from_policy=first_region_from_policy,
     tightened_mpc=tighened_mpc,
     learn_infeasible_regions=True,
 )

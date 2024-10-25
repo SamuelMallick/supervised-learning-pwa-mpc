@@ -3,14 +3,15 @@ import numpy as np
 from csnlp.wrappers.mpc.pwa_mpc import PwaMpc
 from gymnasium import Env
 
-from slpwampc.core.parc import Parc
+from slpwampc.core.parc import Parc, ParcEnsemble
 from slpwampc.core.systems import PwaSystem
 from slpwampc.misc.action_mapping import PwaActionMapper
 from slpwampc.misc.regions import Polytope
+from slpwampc.utils.tikz import save2tikz
 
 
 class ParcAgent:
-    """An agent who trains an oblique decision tree policy, for the switching sequences of a PWA system, in a supervised manner."""
+    """An agent who trains a policy using an ensemble of PARC classifiers, one for each PWA region, that select the switching sequences of a PWA system, in a supervised manner."""
 
     def __init__(
         self,
@@ -18,7 +19,6 @@ class ParcAgent:
         mixed_integer_mpc: PwaMpc,
         time_varying_affine_mpc: PwaMpc,
         N: int,
-        first_region_from_policy: bool = False,
         tightened_mpc: PwaMpc | None = None,
         learn_infeasible_regions: bool = False,
     ) -> None:
@@ -32,8 +32,6 @@ class ParcAgent:
             The mixed-integer MPC.
         N : int
             The prediction horizon.
-        first_region_from_policy : bool, optional
-            If true the policy outputs sequences of length N, defining also the PWa region at the first timestep, otherwise N-1. By default False.
         tightened_mpc : MpcMld, optional
             A tightened version of the MPC, used for learning feasible region with a small margin. By default None.
         learn_infeasible_regions : bool, optional
@@ -41,10 +39,8 @@ class ParcAgent:
         """
         self.nx = system.A[0].shape[0]
         self.nu = system.B[0].shape[1]
-        self.action_mapper = PwaActionMapper(
-            len(system.A),
-            N if first_region_from_policy else mixed_integer_mpc.prediction_horizon - 1,
-        )
+        self.nr = len(system.A)
+        self.action_mapper = PwaActionMapper(len(system.A), N)
         self.system = system
         self.mixed_integer_mpc = mixed_integer_mpc
         self.time_varying_affine_mpc = time_varying_affine_mpc
@@ -52,16 +48,10 @@ class ParcAgent:
             tightened_mpc if tightened_mpc is not None else mixed_integer_mpc
         )
         self.N = N
-        self.first_region_from_policy = first_region_from_policy
         self.learn_infeasible_regions = learn_infeasible_regions
-        self.parc = Parc(
-            K=30,
-            alpha=1.0e2,
-            maxiter=150,
-            sigma=10,
-            separation="Softmax",
-            verbose=0,
-            min_number=1,
+        self.parc = ParcEnsemble(
+            num_classifiers=len(system.A),
+            regions=[(system.S[i], system.T[i]) for i in range(self.nr)],
         )
 
     def get_switching_sequence(self, x: np.ndarray) -> np.ndarray | None:
@@ -165,10 +155,11 @@ class ParcAgent:
 
     def train(
         self,
-        initial_state_set: np.ndarray,
+        initial_state_sets: list[np.ndarray],
         plot: bool = False,
         interactive: bool = False,
     ) -> tuple[np.ndarray, np.ndarray, dict]:
+        # TODO DOCSTRINGS
         """Train the decision tree policy.
 
         Parameters
@@ -194,11 +185,12 @@ class ParcAgent:
                 self.ax = self.fig.add_subplot(111, projection="3d")
             plt.ioff()
 
-        state_train_set = np.empty((0, self.nx))
-        action_train_set = np.empty((0, 1))
+        state_train_sets = [np.empty((0, self.nx)) for _ in range(self.nr)]
+        action_train_sets = [np.empty((0, 1)) for _ in range(self.nr)]
 
-        state_set = initial_state_set
+        state_sets = initial_state_sets
         iter = 0
+        finished_regions: list[int] = []
         while True:
             if plot and not interactive:
                 if self.nx == 2:
@@ -206,122 +198,146 @@ class ParcAgent:
                 else:
                     self.fig = plt.figure()
                     self.ax = self.fig.add_subplot(111, projection="3d")
-            print(f"Training iteration {iter}. {state_set.shape[0]} new states.")
-            optimal_states, optimal_actions = self.generate_supervised_learning_data(
-                state_set
+            print(
+                f"Training iteration {iter}. {sum(state_sets[i].shape[0] for i in range(self.nr))} new states."
             )
-            state_train_set = np.vstack((state_train_set, optimal_states))
-            action_train_set = np.vstack((action_train_set, optimal_actions))
-            print(f"Fitting parc with {state_train_set.shape[0]} samples.")
-
-            self.parc.fit(state_train_set, action_train_set.ravel(), categorical=[True])
-
-            regions = self.parc.get_partition(self.system.D, self.system.E)
-
-            # label each region using the trained tree # TODO get labels directly from c code
-            for region in regions:
-                region.set_label(lambda x: self.parc.predict(x.T)[0].item())
-
-            for region in regions:  # TODO remove this check
-                if not region.is_empty:
-                    x = region.get_point()
-                    label = self.parc.predict(x.T)[0].item()
-                    if label != region.label:
-                        raise ValueError("Region label does not match tree prediction.")
-
-            infeas_vertices = np.empty((0, self.nx, 1))
-            all_vertices = np.empty((0, self.nx))
             num_regions = 0
-            for region in regions:
-                if not region.is_empty:
-                    num_regions += 1
-                    vertices = region.V
-                    label = region.label
-                    all_vertices = np.vstack((all_vertices, vertices))
+            num_infeasible_vertices = 0
+            all_regions = []
+            for i in [j for j in range(self.nr) if j not in finished_regions]:  # TODO make in parallel???
+                optimal_states, optimal_actions = (
+                    self.generate_supervised_learning_data(state_sets[i], first_region=i)
+                )
+                state_train_sets[i] = np.vstack((state_train_sets[i], optimal_states))
+                action_train_sets[i] = np.vstack(
+                    (action_train_sets[i], optimal_actions)
+                )
+                print(f"Fitting parc {i} with {state_train_sets[i].shape[0]} samples.")
 
-                    if self.learn_infeasible_regions and label == -1:
-                        for vertex in vertices:
-                            sol = self.mixed_integer_mpc.solve(
-                                {"x_0": vertex.reshape(-1, 1)}
+                    
+                self.parc.fit(
+                    i,
+                    state_train_sets[i],
+                    action_train_sets[i].ravel(),
+                    self.system.D, 
+                    self.system.E,
+                    categorical=[True],
+                )
+
+                regions = self.parc.get_partition(i)
+                all_regions.extend(regions)
+
+                for region in regions:  # TODO remove this check
+                    if not region.is_empty:
+                        x = region.get_point()
+                        label = self.parc.predict(x.T)[0].item()
+                        if label != region.label:
+                            raise ValueError(
+                                "Region label does not match prediction."
                             )
-                            if sol.success:
-                                infeas_vertices = np.vstack(
-                                    (infeas_vertices, vertex.reshape(1, -1, 1))
+
+                infeas_vertices = np.empty((0, self.nx, 1))
+                all_vertices = np.empty((0, self.nx))
+                for region in regions:
+                    if not region.is_empty:
+                        num_regions += 1
+                        vertices = region.V
+                        label = region.label
+                        all_vertices = np.vstack((all_vertices, vertices))
+
+                        if self.learn_infeasible_regions and label == -1:
+                            for vertex in vertices:
+                                sol = self.mixed_integer_mpc.solve(
+                                    {"x_0": vertex.reshape(-1, 1)}
                                 )
-                    else:
-                        # action mapper returns tensor that is vectorizable. Hence we need to convert it to numpy array and remove extra dims
-                        switching_sequence = np.asarray(
-                            self.action_mapper.get_action_from_label(
-                                np.asarray(label).reshape(1, 1)
-                            )
-                        ).reshape(-1, 1)
+                                if sol.success:
+                                    infeas_vertices = np.vstack(
+                                        (infeas_vertices, vertex.reshape(1, -1, 1))
+                                    )
+                        else:
+                            # action mapper returns tensor that is vectorizable. Hence we need to convert it to numpy array and remove extra dims
+                            switching_sequence = np.asarray(
+                                self.action_mapper.get_action_from_label(
+                                    np.asarray(label).reshape(1, 1)
+                                )
+                            ).reshape(-1, 1)
 
-                        for vertex in vertices:
-                            _switching_sequence = (
-                                switching_sequence
-                                if self.first_region_from_policy
-                                else np.vstack(
-                                    (
-                                        np.array(
-                                            [
+                            for vertex in vertices:
+                                _switching_sequence = (
+                                    switching_sequence
+                                    if self.first_region_from_policy
+                                    else np.vstack(
+                                        (
+                                            np.array(
                                                 [
-                                                    self.system.get_region(
-                                                        vertex.reshape(-1, 1)
-                                                    )
+                                                    [
+                                                        self.system.get_region(
+                                                            vertex.reshape(-1, 1)
+                                                        )
+                                                    ]
                                                 ]
-                                            ]
-                                        ),
-                                        switching_sequence,
+                                            ),
+                                            switching_sequence,
+                                        )
                                     )
                                 )
-                            )
-                            self.time_varying_affine_mpc.set_sequence(
-                                _switching_sequence.flatten().tolist()
-                            )
-                            sol = self.time_varying_affine_mpc.solve(
-                                {"x_0": vertex.reshape(-1, 1)}
-                            )
-                            if not sol.success:
-                                infeas_vertices = np.vstack(
-                                    (infeas_vertices, vertex.reshape(1, -1, 1))
+                                self.time_varying_affine_mpc.set_sequence(
+                                    _switching_sequence.flatten().tolist()
                                 )
+                                sol = self.time_varying_affine_mpc.solve(
+                                    {"x_0": vertex.reshape(-1, 1)}
+                                )
+                                if not sol.success:
+                                    infeas_vertices = np.vstack(
+                                        (infeas_vertices, vertex.reshape(1, -1, 1))
+                                    )
 
-            # remove duplicates
-            all_vertices = np.array(list(set(map(tuple, all_vertices))))
-            if infeas_vertices.shape[0] > 0:
-                infeas_vertices = np.array(
-                    list(set(map(tuple, infeas_vertices.squeeze(-1))))
-                )[:, :, None]
-            percentage_infeas = infeas_vertices.shape[0] / all_vertices.shape[0] * 100
-            print(f"Number of vertices: {all_vertices.shape[0]}")
-            print(f"Number of infeasible vertices: {infeas_vertices.shape[0]}")
-            print(f"Percentage of vertices infeas: {percentage_infeas}%")
+                # remove duplicates
+                all_vertices = np.array(list(set(map(tuple, all_vertices))))
+                if infeas_vertices.shape[0] > 0:
+                    infeas_vertices = np.array(
+                        list(set(map(tuple, infeas_vertices.squeeze(-1))))
+                    )[:, :, None]
+                else:
+                    finished_regions.append(i)
+                percentage_infeas = (
+                    infeas_vertices.shape[0] / all_vertices.shape[0] * 100
+                )
+                print(f"Number of vertices: {all_vertices.shape[0]}")
+                num_infeasible_vertices += infeas_vertices.shape[0]
+                print(f"Number of infeasible vertices: {infeas_vertices.shape[0]}")
+                print(f"Percentage of vertices infeas: {percentage_infeas}%")
+                state_sets[i] = infeas_vertices
 
+            for i in finished_regions:
+                all_regions.extend(self.parc.get_partition(i))
+                num_regions += len(self.parc.get_partition(i))
+            
             if plot:
                 self.plot_iteration(
                     iter,
                     self.nx == 2,
                     interactive,
-                    regions,
-                    state_train_set,
-                    infeas_vertices,
-                    np.unique(action_train_set),
+                    all_regions,
+                    np.concatenate(state_train_sets),
+                    np.concatenate(state_sets),
+                    np.unique(np.concatenate(action_train_sets)),
                 )
 
-            state_set = infeas_vertices
-            if infeas_vertices.shape[0] == 0:
+            
+            if num_infeasible_vertices == 0:
                 if plot:
                     plt.pause(1e5)
                     plt.ioff()
                 return (
-                    state_train_set,
-                    action_train_set,
+                    np.concatenate(state_train_sets),
+                    np.concatenate(action_train_sets),
                     {"iters": iter, "num_regions": num_regions},
                 )
             iter += 1
 
     def generate_supervised_learning_data(
-        self, x: np.ndarray
+        self, x: np.ndarray, first_region: int | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
         """For a given set of states, generate optimal switching sequences.
 
@@ -329,6 +345,11 @@ class ParcAgent:
         ----------
         x : np.ndarray
             The states. Shape (num_states, nx, 1)
+        first_region : int, optional
+            If a first region is passed, the first element of the sequence
+            generated by the mpc is set artificially to this region. This
+            is to handle the points on the boundary which can have multiple
+            optimal first regions. By default None.
 
         Returns
         -------
@@ -344,6 +365,8 @@ class ParcAgent:
             if optimal_action is not None:
                 if not self.learn_infeasible_regions:
                     valid_states.append(state)
+                if first_region is not None:
+                    optimal_action[0] = first_region
                 valid_actions.append(
                     self.action_mapper.get_label_from_action(optimal_action)
                 )
@@ -366,20 +389,29 @@ class ParcAgent:
         -------
         np.ndarray | None
             The switching sequence if the problem is feasible, otherwise None."""
-        switching_sequence = np.zeros(
-            (self.N if self.first_region_from_policy else self.N - 1, 1)
-        )
+        switching_sequence = np.zeros((self.N, 1))
         sol = self.mixed_integer_mpc.solve({"x_0": x})
         if sol.success:
             delta = sol.vals["delta"]  # binary vars that represent PWA regions
             switching_sequence = np.argmax(delta, axis=0).reshape(-1, 1)
-            return (
-                switching_sequence
-                if self.first_region_from_policy
-                else switching_sequence[1:]
-            )
+            return switching_sequence
         else:
             return None
+        
+    def get_regions(self) -> list[Polytope]:
+        """Get the regions of the policy.
+
+        Returns
+        -------
+        list[Polytope]
+            The regions."""
+        regions = []
+        for i in range(self.nr):
+            regions.extend(
+                self.parc.get_partition(i)
+            )
+        return regions
+
 
     def plot_iteration(
         self,
@@ -412,10 +444,10 @@ class ParcAgent:
         if interactive:
             self.ax.clear()
 
-        self.ax.set_xlim(-21, 21)
-        self.ax.set_ylim(-21, 21)
+        self.ax.set_xlim(-12, 12)
+        self.ax.set_ylim(-12, 12)
 
-        for label in unique_labels:
+        for i, label in enumerate(unique_labels):
             self.ax.set_title(f"label: {label}")
             for region in [r for r in regions if not r.is_empty and r.label == label]:
                 if not region.is_empty:
@@ -424,7 +456,7 @@ class ParcAgent:
                         color=f"C{int(region.label)}" if region.label >= 0 else "black",
                         alpha=0.5,
                     )
-                    # plt.pause(1)
+            # plt.pause(1)
 
         if is_2D:
             self.ax.plot(
@@ -443,8 +475,8 @@ class ParcAgent:
                 markersize=5,
                 linestyle="None",
             )
-            plt.xlim(-21, 21)
-            plt.ylim(-21, 21)
+            plt.xlim(-12, 12)
+            plt.ylim(-12, 12)
         else:
             self.ax.scatter(
                 state_train_set[:, 0],
@@ -470,8 +502,7 @@ class ParcAgent:
         # self.parc.plot_partition([-15, -15], [15, 15])
         # plt.show()
 
-        # if iter in [0, 10, 25]:
-        #     save2tikz(plt.gcf())
+        # save2tikz(plt.gcf(), name=f"parc_{iter}")
         if not interactive:
             plt.show()
         else:
@@ -494,4 +525,4 @@ class ParcAgent:
         ----------
         path : str
             The path to the file."""
-        self.parc.load(path)
+        self.parc.load(path, self.system.D, self.system.E)

@@ -68,7 +68,7 @@ class PwaSystem:
         """
         if self.region_depends_on_u:
             raise ValueError("Region depends on control input")
-        for i in range(len(self.S)):
+        for i in range(len(self.S)):  # TODO remove loop
             if (self.S[i] @ x <= self.T[i]).all():
                 return i
         raise ValueError("No region found for state")

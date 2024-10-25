@@ -73,6 +73,7 @@ class Model:
         sample_strategy: Literal["random", "grid", "focused"] = "random",
         num_points: int = 100,
         d: float = 0.1,
+        region: int | None = None,
     ) -> list[np.ndarray]:
         """Sample points from the state space of the system.
 
@@ -90,15 +91,37 @@ class Model:
             The spacing between grid points for grid strategy, by default 0.1.
         """
         if sample_strategy == "random":
-            return random_sample_region(Model.D, Model.E, num_points, np_random)
-        elif sample_strategy == "grid":
-            regions_points = [
-                grid_sample_region(np.vstack((S, Model.D)), np.vstack((T, Model.E)), d)
-                for S, T in zip(Model.S, Model.T)
-            ]
-            return np.concatenate(
-                regions_points,
-                axis=0,
+            return random_sample_region(
+                (
+                    np.vstack((Model.S[region], Model.D))
+                    if region is not None
+                    else Model.D
+                ),
+                (
+                    np.vstack((Model.T[region], Model.E))
+                    if region is not None
+                    else Model.E
+                ),
+                num_points,
+                np_random,
             )
+        elif sample_strategy == "grid":
+            if region is None:
+                regions_points = [
+                    grid_sample_region(
+                        np.vstack((S, Model.D)), np.vstack((T, Model.E)), d
+                    )
+                    for S, T in zip(Model.S, Model.T)
+                ]
+                return np.concatenate(
+                    regions_points,
+                    axis=0,
+                )
+            else:
+                return grid_sample_region(
+                    np.vstack((Model.S[region], Model.D)),
+                    np.vstack((Model.T[region], Model.E)),
+                    d,
+                )
         else:
             raise NotImplementedError()

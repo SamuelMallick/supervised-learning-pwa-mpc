@@ -14,9 +14,8 @@ from slpwampc.misc.action_mapping import PwaActionMapper
 np_random = np.random.default_rng(0)
 
 SAVE = True
-first_region_from_policy = False
 
-N = 5
+N = 12
 nx, nu = Model.nx, Model.nu
 system = Model.get_system()
 system_dict = Model.get_system_dict()
@@ -26,12 +25,11 @@ agent = ParcAgent(
     system,
     mpc,
     N,
-    first_region_from_policy,
 )
 
-action_mapper = PwaActionMapper(len(system.A), N if first_region_from_policy else N - 1)
+action_mapper = PwaActionMapper(len(system.A), N)
 validation_samples = Model.sample_state_space(
-    d=0.1, np_random=np_random, sample_strategy="grid"
+    d=0.25, np_random=np_random, sample_strategy="grid"
 )
 valid_validation_states: list[np.ndarray] = []
 optimal_validation_actions: list[int] = []
@@ -45,7 +43,7 @@ for idx, state in enumerate(validation_samples):
         )
 if SAVE:
     with open(
-        f"optimal_policy_N_{N}_samples_Tset.pkl",
+        f"optimal_policy_N_{N}_samples.pkl",
         "wb",
     ) as file:
         pickle.dump(

@@ -49,7 +49,7 @@ class PwaSystem:
             The next state and the region index.
         """
         for i in range(len(self.S)):
-            if (self.S[i] @ x + self.R[i] @ u <= self.T[i]).all():
+            if np.all(self.S[i] @ x + self.R[i] @ u <= self.T[i]):
                 return self.A[i] @ x + self.B[i] @ u + self.c[i], i
         raise ValueError("No region found for state and action")
 

@@ -105,7 +105,7 @@ class TimeVaryingAffineMpc(PwaMpc):
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
         self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
-        self.init_solver(solver_options["clp"], solver="clp")  # clp
+        self.init_solver(solver_options["gurobi"], solver="gurobi")  # clp
 
 
 class MixedIntegerMpc(PwaMpc):
@@ -134,8 +134,11 @@ class MixedIntegerMpc(PwaMpc):
             )
             for i in range(len(system["A"]))
         ]
-        D = D = cs.diagcat(system["D"], system["F"]).sparse()
-        E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
+        # D = cs.diagcat(system["D"], system["F"])
+        # E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
+        D = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]])
+        lim = 100
+        E = np.array([lim, lim, lim, lim, lim, lim])
 
         self.set_pwa_dynamics(pwa_system, D, E)
         self.constraint("state_constraints", system["D"] @ x - system["E"], "<=", 0)
@@ -174,8 +177,11 @@ class TightenedMixedIntegerMpc(PwaMpc):
             )
             for i in range(len(system["A"]))
         ]
-        D = D = cs.diagcat(system["D"], system["F"]).sparse()
-        E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
+        # D = cs.diagcat(system["D"], system["F"])
+        # E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
+        D = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]])
+        lim = 100
+        E = np.array([lim, lim, lim, lim, lim, lim])
 
         self.set_pwa_dynamics(pwa_system, D, E)
         self.constraint(

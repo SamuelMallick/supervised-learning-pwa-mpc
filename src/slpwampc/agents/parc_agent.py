@@ -3,11 +3,10 @@ import numpy as np
 from csnlp.wrappers.mpc.pwa_mpc import PwaMpc
 from gymnasium import Env
 
-from slpwampc.core.parc import Parc, ParcEnsemble
+from slpwampc.core.parc import ParcEnsemble
 from slpwampc.core.systems import PwaSystem
 from slpwampc.misc.action_mapping import PwaActionMapper
 from slpwampc.misc.regions import Polytope
-from slpwampc.utils.tikz import save2tikz
 
 
 class ParcAgent:
@@ -119,7 +118,7 @@ class ParcAgent:
             truncated, terminated, timestep = False, False, 0
             solve_times: list[float] = []
             while not truncated and not terminated:
-                print(f"timestep {timestep}")  
+                print(f"timestep {timestep}")
                 if use_learned_policy:
                     seq = self.get_switching_sequence(x)
                     if seq is None:
@@ -204,9 +203,13 @@ class ParcAgent:
             num_regions = 0
             num_infeasible_vertices = 0
             all_regions = []
-            for i in [j for j in range(self.nr) if j not in finished_regions]:  # TODO make in parallel???
+            for i in [
+                j for j in range(self.nr) if j not in finished_regions
+            ]:  # TODO make in parallel???
                 optimal_states, optimal_actions = (
-                    self.generate_supervised_learning_data(state_sets[i], first_region=i)
+                    self.generate_supervised_learning_data(
+                        state_sets[i], first_region=i
+                    )
                 )
                 state_train_sets[i] = np.vstack((state_train_sets[i], optimal_states))
                 action_train_sets[i] = np.vstack(
@@ -214,12 +217,11 @@ class ParcAgent:
                 )
                 print(f"Fitting parc {i} with {state_train_sets[i].shape[0]} samples.")
 
-                    
                 self.parc.fit(
                     i,
                     state_train_sets[i],
                     action_train_sets[i].ravel(),
-                    self.system.D, 
+                    self.system.D,
                     self.system.E,
                     categorical=[True],
                 )
@@ -232,9 +234,7 @@ class ParcAgent:
                         x = region.get_point()
                         label = self.parc.predict(x.T)[0].item()
                         if label != region.label:
-                            raise ValueError(
-                                "Region label does not match prediction."
-                            )
+                            raise ValueError("Region label does not match prediction.")
 
                 infeas_vertices = np.empty((0, self.nx, 1))
                 all_vertices = np.empty((0, self.nx))
@@ -312,7 +312,7 @@ class ParcAgent:
             for i in finished_regions:
                 all_regions.extend(self.parc.get_partition(i))
                 num_regions += len(self.parc.get_partition(i))
-            
+
             if plot:
                 self.plot_iteration(
                     iter,
@@ -324,7 +324,6 @@ class ParcAgent:
                     np.unique(np.concatenate(action_train_sets)),
                 )
 
-            
             if num_infeasible_vertices == 0:
                 if plot:
                     plt.pause(1e5)
@@ -397,7 +396,7 @@ class ParcAgent:
             return switching_sequence
         else:
             return None
-        
+
     def get_regions(self) -> list[Polytope]:
         """Get the regions of the policy.
 
@@ -407,11 +406,8 @@ class ParcAgent:
             The regions."""
         regions = []
         for i in range(self.nr):
-            regions.extend(
-                self.parc.get_partition(i)
-            )
+            regions.extend(self.parc.get_partition(i))
         return regions
-
 
     def plot_iteration(
         self,

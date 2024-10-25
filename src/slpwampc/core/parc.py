@@ -7,7 +7,14 @@ from slpwampc.misc.regions import Polytope
 class Parc(PARC):
     regions: list[Polytope] = []
 
-    def fit(self, X: np.ndarray, Y: np.ndarray, A: np.ndarray, b: np.ndarray, categorical=None):
+    def fit(
+        self,
+        X: np.ndarray,
+        Y: np.ndarray,
+        A: np.ndarray,
+        b: np.ndarray,
+        categorical=None,
+    ):
         # TODO docstring
         super().fit(X, Y, categorical=categorical)
         self._set_partition(A, b)
@@ -86,11 +93,17 @@ class ParcEnsemble:
         raise ValueError(f"No region found for state {x}")
 
     def fit(self, i, X, Y, A, b, categorical=None):
-        self.classifiers[i].fit(X, Y, np.vstack((A, self.regions[i][0])), np.vstack((b, self.regions[i][1])), categorical=categorical)
+        self.classifiers[i].fit(
+            X,
+            Y,
+            np.vstack((A, self.regions[i][0])),
+            np.vstack((b, self.regions[i][1])),
+            categorical=categorical,
+        )
 
     def get_partition(self, i: int) -> list[Polytope]:
         return self.classifiers[i].get_partition()
-       
+
     def save(self, filename: str):
         for i, classifier in enumerate(self.classifiers):
             classifier.save(f"{filename}_{i}")
@@ -98,4 +111,6 @@ class ParcEnsemble:
     def load(self, filename: str, A: np.ndarray, b: np.ndarray):
         for i, classifier in enumerate(self.classifiers):
             classifier.load(f"{filename}_{i}")
-            classifier._set_partition(np.vstack((A, self.regions[i][0])), np.vstack((b, self.regions[i][1])))
+            classifier._set_partition(
+                np.vstack((A, self.regions[i][0])), np.vstack((b, self.regions[i][1]))
+            )

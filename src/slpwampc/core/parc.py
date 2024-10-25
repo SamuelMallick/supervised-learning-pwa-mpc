@@ -65,7 +65,7 @@ class ParcEnsemble:
         self,
         num_classifiers: int,
         regions: list[tuple[np.ndarray, np.ndarray]],
-        sigma: float = 10,
+        sigma: float = 15,
         alpha: float = 1.0e2,
         K: int = 15,
     ):

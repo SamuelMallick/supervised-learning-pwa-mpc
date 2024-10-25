@@ -2,17 +2,17 @@ import pickle
 
 import numpy as np
 
-for N in range(5, 13):
-    with open(f"examples/paper_2024/results/training_N_{N}.pkl", "rb") as f:
-        data = pickle.load(f)
-        print(f"Results for N={N}")
-        print(f"Num samples: {len(data['x'])}")
-        print(f"Num regions: {data['num_regions']}")
-        print(f"Num iters: {data['iters']}")
+# for N in range(5, 13):
+#     with open(f"examples/paper_2024/results/training_N_{N}.pkl", "rb") as f:
+#         data = pickle.load(f)
+#         print(f"Results for N={N}")
+#         print(f"Num samples: {len(data['x'])}")
+#         print(f"Num regions: {data['num_regions']}")
+#         print(f"Num iters: {data['iters']}")
 
 N = 12
 with open(
-    f"examples/paper_2024/results/evaluate_closed_loop_N_{N}_learned_True.pkl", "rb"
+    f"examples/paper_2024/results/evaluate_closed_loop_N_{N}_learned_True_clp.pkl", "rb"
 ) as f:
     data = pickle.load(f)
     X_l = data["X"]

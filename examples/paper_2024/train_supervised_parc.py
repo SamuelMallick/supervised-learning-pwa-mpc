@@ -14,7 +14,7 @@ np.random.seed(1)
 
 SAVE = True
 
-N = 11  # prediction horizon
+N = 12  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu
@@ -32,7 +32,7 @@ tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.1, X_f=Model.X_f)
 # )
 initial_state_samples = [
     Model.sample_state_space(
-        num_points=15, np_random=np_random, sample_strategy="random", region=i
+        num_points=45, np_random=np_random, sample_strategy="random", region=i
     )
     for i in range(2)
 ]

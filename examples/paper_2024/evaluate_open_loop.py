@@ -10,9 +10,9 @@ from slpwampc.agents.parc_agent import ParcAgent
 np_random = np.random.default_rng(0)
 np.random.seed(0)
 
-GENERATE = True  # if false we just plot from already saved data
+GENERATE = False  # if false we just plot from already saved data
 
-N = 10  # prediction horizon
+N = 12  # prediction horizon
 
 nx, nu = Model.nx, Model.nu
 system = Model.get_system()
@@ -23,6 +23,7 @@ time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
     mixed_integer_mpc,  # not important which mpc is passed here
+    time_varying_affine_mpc,
     N,
     learn_infeasible_regions=True,
 )
@@ -30,7 +31,7 @@ agent.load(f"examples/paper_2024/results/parc_agent_N_{N}")
 
 if GENERATE:
     initial_state_samples = Model.sample_state_space(
-        d=0.1, np_random=np_random, sample_strategy="grid", num_points=2000
+        d=0.2, np_random=np_random, sample_strategy="grid", num_points=2000
     )
     states = []
     costs_opt = []

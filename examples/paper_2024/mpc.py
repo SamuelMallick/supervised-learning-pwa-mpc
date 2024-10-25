@@ -136,7 +136,9 @@ class MixedIntegerMpc(PwaMpc):
         ]
         # D = cs.diagcat(system["D"], system["F"])
         # E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
-        D = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]])
+        D = np.array(
+            [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+        )
         lim = 100
         E = np.array([lim, lim, lim, lim, lim, lim])
 
@@ -179,7 +181,9 @@ class TightenedMixedIntegerMpc(PwaMpc):
         ]
         # D = cs.diagcat(system["D"], system["F"])
         # E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
-        D = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]])
+        D = np.array(
+            [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+        )
         lim = 100
         E = np.array([lim, lim, lim, lim, lim, lim])
 

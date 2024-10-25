@@ -239,7 +239,7 @@ class ParcAgent:
 
                         if self.learn_infeasible_regions and label == -1:
                             for vertex in vertices:
-                                sol = self.tightened_mpc.solve( 
+                                sol = self.tightened_mpc.solve(
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if sol.success:

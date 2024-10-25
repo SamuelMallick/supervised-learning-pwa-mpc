@@ -69,15 +69,7 @@ class ParcAgent:
         if pred == -1:
             return None
         else:
-            if self.first_region_from_policy:
-                return self.action_mapper.get_action_from_label(pred)[0]
-            else:
-                return np.concatenate(
-                    (
-                        np.array([[self.system.get_region(x)]]),
-                        self.action_mapper.get_action_from_label(pred)[0],
-                    )
-                )
+            return self.action_mapper.get_action_from_label(pred)[0]
 
     def evaluate(
         self,
@@ -263,26 +255,8 @@ class ParcAgent:
                             ).reshape(-1, 1)
 
                             for vertex in vertices:
-                                _switching_sequence = (
-                                    switching_sequence
-                                    if self.first_region_from_policy
-                                    else np.vstack(
-                                        (
-                                            np.array(
-                                                [
-                                                    [
-                                                        self.system.get_region(
-                                                            vertex.reshape(-1, 1)
-                                                        )
-                                                    ]
-                                                ]
-                                            ),
-                                            switching_sequence,
-                                        )
-                                    )
-                                )
                                 self.time_varying_affine_mpc.set_sequence(
-                                    _switching_sequence.flatten().tolist()
+                                    switching_sequence.flatten().tolist()
                                 )
                                 sol = self.time_varying_affine_mpc.solve(
                                     {"x_0": vertex.reshape(-1, 1)}

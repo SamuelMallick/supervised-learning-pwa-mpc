@@ -11,7 +11,6 @@ from mpcrl.wrappers.envs import MonitorEpisodes
 from slpwampc.agents.parc_agent import ParcAgent
 from slpwampc.core.systems import PwaSystem
 
-
 class PwaEnv(gymnasium.Env):
     """Environement simulating the PWA system."""
 

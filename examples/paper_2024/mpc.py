@@ -144,7 +144,7 @@ class MixedIntegerMpc(PwaMpc):
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
         self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
-        self.init_solver(solver_options["knitro"], solver="knitro")
+        self.init_solver(solver_options["gurobi"], solver="gurobi")
 
 
 class TightenedMixedIntegerMpc(PwaMpc):

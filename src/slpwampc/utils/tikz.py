@@ -8,7 +8,7 @@ mpl.lines.Line2D._us_dashOffset = property(lambda self: self._dash_pattern[0])
 mpl.legend.Legend._ncol = property(lambda self: self._ncols)
 
 
-def save2tikz(*figs: Figure) -> None:
+def save2tikz(*figs: Figure, name: str = "") -> None:
     """Saves the figure to a tikz file (`.tex` extension).
     See https://pypi.org/project/tikzplotlib/ for more details.
 
@@ -20,7 +20,7 @@ def save2tikz(*figs: Figure) -> None:
     """
     for fig in figs:
         tikzplotlib.save(
-            f"figure_{fig.number}.tex",
+            f"figure_{fig.number}_{name}.tex",
             figure=fig,
             extra_axis_parameters={r"tick scale binop=\times"},
         )

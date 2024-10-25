@@ -25,6 +25,8 @@ agent.load(f"examples/paper_2024/results/parc_agent_N_{N}")
 
 regions = agent.get_regions()
 
+print(f"Number of regions: {len(regions)}")
+
 # label each region using the trained tree # TODO get labels directly from c code
 fig, ax = plt.subplots()
 labels = np.unique([region.label for region in regions])

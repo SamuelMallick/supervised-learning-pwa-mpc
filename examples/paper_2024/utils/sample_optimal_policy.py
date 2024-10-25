@@ -8,7 +8,7 @@ from slpwampc.agents.parc_agent import ParcAgent
 
 sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
-from examples.paper_2024.mpc import ThisMpcMld
+from examples.paper_2024.mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 from slpwampc.misc.action_mapping import PwaActionMapper
 
 np_random = np.random.default_rng(0)
@@ -20,16 +20,19 @@ nx, nu = Model.nx, Model.nu
 system = Model.get_system()
 system_dict = Model.get_system_dict()
 
-mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
+mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
+time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
-    mpc,
-    N,
+    mixed_integer_mpc=mixed_integer_mpc,
+    time_varying_affine_mpc=time_varying_affine_mpc,
+    N=N,
+    learn_infeasible_regions=True,
 )
 
 action_mapper = PwaActionMapper(len(system.A), N)
 validation_samples = Model.sample_state_space(
-    d=0.25, np_random=np_random, sample_strategy="grid"
+    d=1, np_random=np_random, sample_strategy="grid"
 )
 valid_validation_states: list[np.ndarray] = []
 optimal_validation_actions: list[int] = []
@@ -43,7 +46,7 @@ for idx, state in enumerate(validation_samples):
         )
 if SAVE:
     with open(
-        f"optimal_policy_N_{N}_samples.pkl",
+        f"examples/paper_2024/results/optimal_policy_N_{N}_samples.pkl",
         "wb",
     ) as file:
         pickle.dump(

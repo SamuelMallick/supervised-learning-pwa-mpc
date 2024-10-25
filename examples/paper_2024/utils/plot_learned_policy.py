@@ -8,7 +8,7 @@ from slpwampc.agents.parc_agent import ParcAgent
 
 sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
-from examples.paper_2024.mpc_mld import ThisMpcMld
+from examples.paper_2024.mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 
 N = 12  # prediction horizon
 
@@ -16,11 +16,13 @@ nx, nu = Model.nx, Model.nu
 system = Model.get_system()
 system_dict = Model.get_system_dict()
 
-mpc = ThisMpcMld(system_dict, N, nx, nu, X_f=Model.X_f, verbose=False)
+mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
+time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = ParcAgent(
     system,
-    mpc,
-    N,
+    mixed_integer_mpc=mixed_integer_mpc,
+    time_varying_affine_mpc=time_varying_affine_mpc,
+    N=N,
     learn_infeasible_regions=True,
 )
 agent.load(f"examples/paper_2024/results/parc_agent_N_{N}")

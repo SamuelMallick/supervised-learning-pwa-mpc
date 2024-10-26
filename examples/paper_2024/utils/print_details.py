@@ -10,7 +10,6 @@ for N in range(5, 13):
         print(f"Results for N={N}")
         print(f"Num samples: {len(data['x'])}")
         print(f"Num samples relative to N=5: {len(data['x']) / base_line_samples}")
-        print(f"Num regions: {data['num_regions']}")
         print(f"Num iters: {data['iters']}")
 
 N = 12

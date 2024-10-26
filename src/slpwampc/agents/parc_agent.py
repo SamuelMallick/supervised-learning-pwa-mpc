@@ -195,6 +195,9 @@ class ParcAgent:
             num_regions = 0
             num_infeasible_vertices = 0
             all_regions = []
+            for i in finished_regions:
+                all_regions.extend(self.parc.get_partition(i))
+                num_regions += len(self.parc.get_partition(i))
             for i in [
                 j for j in range(self.nr) if j not in finished_regions
             ]:  # TODO make in parallel???
@@ -282,10 +285,6 @@ class ParcAgent:
                 print(f"Number of infeasible vertices: {infeas_vertices.shape[0]}")
                 print(f"Percentage of vertices infeas: {percentage_infeas}%")
                 state_sets[i] = infeas_vertices
-
-            for i in finished_regions:
-                all_regions.extend(self.parc.get_partition(i))
-                num_regions += len(self.parc.get_partition(i))
 
             if plot:
                 self.plot_iteration(

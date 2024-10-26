@@ -5,8 +5,11 @@ import numpy as np
 for N in range(5, 13):
     with open(f"examples/paper_2024/results/training_N_{N}.pkl", "rb") as f:
         data = pickle.load(f)
+        if N == 5:
+            base_line_samples = len(data["x"])
         print(f"Results for N={N}")
         print(f"Num samples: {len(data['x'])}")
+        print(f"Num samples relative to N=5: {len(data['x']) / base_line_samples}")
         print(f"Num regions: {data['num_regions']}")
         print(f"Num iters: {data['iters']}")
 

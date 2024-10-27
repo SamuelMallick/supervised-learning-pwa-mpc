@@ -7,6 +7,7 @@ from slpwampc.core.parc import ParcEnsemble
 from slpwampc.core.systems import PwaSystem
 from slpwampc.misc.action_mapping import PwaActionMapper
 from slpwampc.misc.regions import Polytope
+from slpwampc.utils.tikz import save2tikz
 
 
 class ParcAgent:
@@ -425,7 +426,7 @@ class ParcAgent:
                         color=f"C{int(region.label)}" if region.label >= 0 else "black",
                         alpha=0.5,
                     )
-            # plt.pause(1)
+            plt.pause(1)
 
         if is_2D:
             self.ax.plot(
@@ -471,7 +472,7 @@ class ParcAgent:
         # self.parc.plot_partition([-15, -15], [15, 15])
         # plt.show()
 
-        # save2tikz(plt.gcf(), name=f"parc_{iter}")
+        save2tikz(plt.gcf(), name=f"parc_{iter}")
         if not interactive:
             plt.show()
         else:

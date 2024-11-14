@@ -134,13 +134,8 @@ class MixedIntegerMpc(PwaMpc):
             )
             for i in range(len(system["A"]))
         ]
-        # D = cs.diagcat(system["D"], system["F"])
-        # E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
-        D = np.array(
-            [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
-        )
-        lim = 100
-        E = np.array([lim, lim, lim, lim, lim, lim])
+        D = cs.diagcat(system["D"], system["F"])
+        E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
 
         self.set_pwa_dynamics(pwa_system, D, E)
         self.constraint("state_constraints", system["D"] @ x - system["E"], "<=", 0)
@@ -179,13 +174,8 @@ class TightenedMixedIntegerMpc(PwaMpc):
             )
             for i in range(len(system["A"]))
         ]
-        # D = cs.diagcat(system["D"], system["F"])
-        # E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
-        D = np.array(
-            [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
-        )
-        lim = 100
-        E = np.array([lim, lim, lim, lim, lim, lim])
+        D = cs.diagcat(system["D"], system["F"])
+        E = np.concatenate((system["E"][:, 0], system["G"][:, 0]))
 
         self.set_pwa_dynamics(pwa_system, D, E)
         self.constraint(

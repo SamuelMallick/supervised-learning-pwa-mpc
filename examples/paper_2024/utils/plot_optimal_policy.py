@@ -9,7 +9,7 @@ sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
 from slpwampc.misc.regions import Polytope
 
-N = 12
+N = 5
 system = Model.get_system()
 
 with open(

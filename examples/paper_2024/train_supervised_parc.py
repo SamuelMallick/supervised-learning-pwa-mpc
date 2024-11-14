@@ -12,9 +12,9 @@ warnings.filterwarnings("ignore")
 np_random = np.random.default_rng(1)
 np.random.seed(1)
 
-SAVE = True
+SAVE = False
 
-N = 5  # prediction horizon
+N = 8  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu

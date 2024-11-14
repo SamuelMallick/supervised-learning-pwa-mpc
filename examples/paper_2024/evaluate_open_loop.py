@@ -6,6 +6,7 @@ from model import Model
 from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.parc_agent import ParcAgent
+from slpwampc.misc.regions import Polytope
 
 np_random = np.random.default_rng(0)
 np.random.seed(0)
@@ -87,8 +88,12 @@ else:
     ).reshape(-1)
     x_o = np.array([states[i][0] for i in range(len(states)) if costs_subopt[i] == -1])
     y_o = np.array([states[i][1] for i in range(len(states)) if costs_subopt[i] == -1])
-    contour = plt.tripcolor(x, y, f, cmap="coolwarm")
-    plt.colorbar(contour)
-    contour.set_rasterized(True)
+    fig, ax = plt.subplots()
+    contour = ax.tripcolor(x, y, f, cmap="coolwarm", shading="gouraud")
+    cbar = plt.colorbar(contour)
+    cbar.ax.tick_params(labelsize=15)
+    # p = Polytope(system.D, system.E)
+    # p.plot(ax, color="white", lw=1.5)
+    # contour.set_rasterized(True)
     plt.axis("off")
     plt.show()

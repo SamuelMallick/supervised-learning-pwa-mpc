@@ -15,7 +15,7 @@ np_random = np.random.default_rng(0)
 
 SAVE = True
 
-N = 12
+N = 5
 nx, nu = Model.nx, Model.nu
 system = Model.get_system()
 system_dict = Model.get_system_dict()
@@ -32,7 +32,7 @@ agent = ParcAgent(
 
 action_mapper = PwaActionMapper(len(system.A), N)
 validation_samples = Model.sample_state_space(
-    d=1, np_random=np_random, sample_strategy="grid"
+    d=0.5, np_random=np_random, sample_strategy="grid"
 )
 valid_validation_states: list[np.ndarray] = []
 optimal_validation_actions: list[int] = []

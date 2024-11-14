@@ -6,7 +6,6 @@ from model import Model
 from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
-from slpwampc.misc.regions import Polytope
 
 np_random = np.random.default_rng(0)
 np.random.seed(0)

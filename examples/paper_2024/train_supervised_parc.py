@@ -6,6 +6,7 @@ from model import Model
 from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
+from slpwampc.core.parc import ParcEnsemble
 
 warnings.filterwarnings("ignore")
 
@@ -37,13 +38,15 @@ initial_state_samples = [
     for i in range(2)
 ]
 
+classifiers = ParcEnsemble(
+    num_classifiers=len(system.A),
+    regions=[(system.S[i], system.T[i]) for i in range(len(system.A))],
+)
+
 agent = Agent(
-    system,
-    mixed_integer_mpc=mixed_integer_mpc,
+    system=system,
     time_varying_affine_mpc=time_varying_affine_mpc,
-    N=N,
-    tightened_mpc=tighened_mpc,
-    learn_infeasible_regions=True,
+    classifiers=classifiers,
 )
 x, y, info = agent.train(initial_state_samples, plot=True, interactive=True)
 

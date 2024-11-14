@@ -4,7 +4,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-from slpwampc.agents.parc_agent import ParcAgent
+from slpwampc.agents.agent import Agent
 
 sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
@@ -18,7 +18,7 @@ system_dict = Model.get_system_dict()
 
 mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
 time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
-agent = ParcAgent(
+agent = Agent(
     system,
     mixed_integer_mpc=mixed_integer_mpc,
     time_varying_affine_mpc=time_varying_affine_mpc,

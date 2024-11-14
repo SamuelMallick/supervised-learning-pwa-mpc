@@ -5,7 +5,7 @@ import numpy as np
 from model import Model
 from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 
-from slpwampc.agents.parc_agent import ParcAgent
+from slpwampc.agents.agent import Agent
 from slpwampc.misc.regions import Polytope
 
 np_random = np.random.default_rng(0)
@@ -21,7 +21,7 @@ system_dict = Model.get_system_dict()
 
 mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
 time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
-agent = ParcAgent(
+agent = Agent(
     system,
     mixed_integer_mpc,  # not important which mpc is passed here
     time_varying_affine_mpc,

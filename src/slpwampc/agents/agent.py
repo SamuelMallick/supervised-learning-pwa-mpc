@@ -10,8 +10,9 @@ from slpwampc.misc.regions import Polytope
 from slpwampc.utils.tikz import save2tikz
 
 
-class ParcAgent:
-    """An agent who trains a policy using an ensemble of PARC classifiers, one for each PWA region, that select the switching sequences of a PWA system, in a supervised manner."""
+class Agent:
+    """An agent who trains a policy, one for each PWA region, that select 
+    the switching sequences of a PWA system, in a supervised manner."""
 
     def __init__(
         self,

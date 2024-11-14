@@ -5,7 +5,7 @@ import numpy as np
 from model import Model
 from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
-from slpwampc.agents.parc_agent import ParcAgent
+from slpwampc.agents.agent import Agent
 
 warnings.filterwarnings("ignore")
 
@@ -37,7 +37,7 @@ initial_state_samples = [
     for i in range(2)
 ]
 
-agent = ParcAgent(
+agent = Agent(
     system,
     mixed_integer_mpc=mixed_integer_mpc,
     time_varying_affine_mpc=time_varying_affine_mpc,

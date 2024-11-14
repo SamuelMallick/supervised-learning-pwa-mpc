@@ -8,7 +8,7 @@ from model import Model
 from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 from mpcrl.wrappers.envs import MonitorEpisodes
 
-from slpwampc.agents.parc_agent import ParcAgent
+from slpwampc.agents.agent import Agent
 from slpwampc.core.systems import PwaSystem
 
 
@@ -109,7 +109,7 @@ system_dict = Model.get_system_dict()
 
 mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
 time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
-agent = ParcAgent(
+agent = Agent(
     system,
     mixed_integer_mpc=mixed_integer_mpc,
     time_varying_affine_mpc=time_varying_affine_mpc,

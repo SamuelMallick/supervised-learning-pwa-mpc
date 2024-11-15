@@ -4,15 +4,27 @@ from scipy.sparse import csr_matrix
 from slpwampc.core.classifiers.classifier import PartitionClassifier
 from slpwampc.misc.regions import Polytope
 
+import matplotlib.pyplot as plt
+
 
 class PwlSep(PartitionClassifier):
     """A classifier that performs multi-class discrimination via linear
     programming, as presented in Bennett and Mangasarian (1992)."""
 
-    def __init__(self):
-        """Initialize the classifier."""
+    def __init__(self, A: np.ndarray, b: np.ndarray):
+        """Initialize the classifier. The inequality Ax <= b defines 
+        the region over which the classifier partitions.
+        
+        Parameters
+        ----------
+        A : np.ndarray
+            The matrix A in the inequality Ax <= b.
+        b : np.ndarray
+            The vector b in the inequality Ax <= b.
+        """
         self.regions: list[Polytope] = []
         self.labels: list[int] = []
+        self.A, self.b = A, b
 
     def get_partition(self) -> list[Polytope]:
         return self.regions
@@ -35,8 +47,8 @@ class PwlSep(PartitionClassifier):
                 return self.labels[i]
         raise ValueError("No region found for the given state.")
 
-    def fit(self, X: np.ndarray, Y: np.ndarray, D: np.ndarray, E: np.ndarray) -> None:
-        """Fit the classifier to the data, creating a partition of the polytope Dx <= E.
+    def fit(self, X: np.ndarray, Y: np.ndarray) -> None:
+        """Fit the classifier to the data.
 
         Parameters
         ----------
@@ -44,11 +56,8 @@ class PwlSep(PartitionClassifier):
             The states.
         Y : np.ndarray
             The labels.
-        D : np.ndarray
-            The matrix D in the inequality Dx <= E.
-        E : np.ndarray
-            The vector E in the inequality Dx <= E.
         """
+        # TODO confirm all points are within the region
         self.labels = np.unique(Y)
         k = self.labels.size  # number of clusters
         X = [
@@ -129,8 +138,8 @@ class PwlSep(PartitionClassifier):
         gamma = result["x"][n * k : n * k + k].reshape((1, k)).T
         self.regions = []  # TODO pre allocate, dont just empty them
         for i in range(k):
-            A_ = D
-            b_ = E
+            A_ = self.A
+            b_ = self.b
             for j in range(k):
                 if j != i:
                     A_ = np.vstack([A_, omega[j, :] - omega[i, :]])

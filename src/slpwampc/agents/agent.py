@@ -281,8 +281,9 @@ class Agent:
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if sol.success:
+                                    infeas_vertices_ = self.add_circle_points(vertex.reshape(1, -1, 1), 0.1, 3)
                                     infeas_vertices = np.vstack(
-                                        (infeas_vertices, vertex.reshape(1, -1, 1))
+                                        (infeas_vertices, infeas_vertices_)
                                     )
                         else:
                             # action mapper returns tensor that is vectorizable. Hence we need to convert it to numpy array and remove extra dims
@@ -300,8 +301,9 @@ class Agent:
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if not sol.success:
+                                    infeas_vertices_ = self.add_circle_points(vertex.reshape(1, -1, 1), 0.1, 3)
                                     infeas_vertices = np.vstack(
-                                        (infeas_vertices, vertex.reshape(1, -1, 1))
+                                        (infeas_vertices, infeas_vertices_)
                                     )
 
                 # remove duplicates
@@ -527,6 +529,37 @@ class Agent:
         else:
             self.fig.canvas.draw()
             plt.pause(0.01)
+
+    def add_circle_points(
+        self, points: np.ndarray, radius: float, num_circle_points: int
+    ) -> np.ndarray:
+        """Add points on a circle around the origin to the given points.
+
+        Parameters
+        ----------
+        points : np.ndarray
+            The points.
+        radius : float
+            The radius of the circle.
+        num_circle_points : int
+            The number of points on the circle.
+
+        Returns
+        -------
+        np.ndarray
+            The points with the added circle points."""
+        n, nx, _ = points.shape
+        assert nx == 2, "Points must be 2-dimensional for creating a circle."
+        angles = np.linspace(0, 2 * np.pi, num_circle_points, endpoint=False)
+        circle_points = (
+            np.stack((np.cos(angles), np.sin(angles)), axis=1) * radius
+        )  # (num_circle_points, 2)
+        circle_points = np.repeat(circle_points, n, axis=0).reshape(
+            num_circle_points, n, nx, 1
+        )
+        new_points = (points + circle_points).reshape(-1, nx, 1)
+        new_points = new_points[np.all(new_points[:, :, 0]@self.system.D.T <= self.system.E.squeeze(), axis=1)]
+        return np.concatenate((new_points, points), axis=0)
 
     def save(self, path: str) -> None:
         """Save the predictor to a file.

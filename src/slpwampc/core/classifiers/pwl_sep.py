@@ -43,7 +43,7 @@ class PwlSep(PartitionClassifier):
             The label.
         """
         for i, region in enumerate(self.regions):
-            if np.all(region.A @ x <= region.b):
+            if not region.is_empty and np.all(region.A @ x <= region.b):
                 return self.labels[i]
         raise ValueError("No region found for the given state.")
 

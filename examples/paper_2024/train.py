@@ -7,6 +7,7 @@ from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
 from slpwampc.core.classifiers.parc import ParcEnsemble
+from slpwampc.core.classifiers.pwl_sep import PwlSep
 
 warnings.filterwarnings("ignore")
 
@@ -15,7 +16,7 @@ np.random.seed(1)
 
 SAVE = False
 
-N = 8  # prediction horizon
+N = 12  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu
@@ -38,17 +39,21 @@ initial_state_samples = [
     for i in range(2)
 ]
 
-classifiers = ParcEnsemble(
-    num_classifiers=len(system.A),
-    regions=[(system.S[i], system.T[i]) for i in range(len(system.A))],
-)
+classifiers = [PwlSep(A=np.vstack([S, system.D]), b=np.vstack([T, system.E])) for S, T in zip(system.S, system.T)]
 
 agent = Agent(
     system=system,
     time_varying_affine_mpc=time_varying_affine_mpc,
     classifiers=classifiers,
 )
-x, y, info = agent.train(initial_state_samples, plot=True, interactive=True)
+x, y, info = agent.train(
+    initial_state_samples,
+    mixed_integer_mpc=mixed_integer_mpc,
+    learn_infeasible_regions=True,
+    tightened_mpc=tighened_mpc,
+    plot=True,
+    interactive=True,
+)
 
 if SAVE:
     agent.save(f"parc_agent_N_{N}")

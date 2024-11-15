@@ -32,8 +32,8 @@ class PartitionClassifier:
         """
         raise NotImplementedError
 
-    def fit(self, X: np.ndarray, Y: np.ndarray, A: np.ndarray, b: np.ndarray) -> None:
-        """Fit the classifier to the data, creating a partition of the polytope Ax <= b.
+    def fit(self, X: np.ndarray, Y: np.ndarray) -> None:
+        """Fit the classifier to the data.
 
         Parameters
         ----------
@@ -41,8 +41,5 @@ class PartitionClassifier:
             The states.
         Y : np.ndarray
             The labels.
-        A : np.ndarray
-            The matrix A in the inequality Ax <= b.
-        b : np.ndarray
         """
         raise NotImplementedError

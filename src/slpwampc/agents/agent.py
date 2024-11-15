@@ -237,7 +237,10 @@ class Agent:
             ]:  # TODO make in parallel???
                 optimal_states, optimal_actions = (
                     self.generate_supervised_learning_data(
-                        state_sets[i], first_region=i
+                        state_sets[i],
+                        mixed_integer_mpc=mixed_integer_mpc,
+                        label_infeasible_regions=learn_infeasible_regions,
+                        first_region=i,
                     )
                 )
                 state_train_sets[i] = np.vstack((state_train_sets[i], optimal_states))
@@ -251,11 +254,9 @@ class Agent:
                 self.classifiers[i].fit(
                     state_train_sets[i],
                     action_train_sets[i].ravel(),
-                    self.system.D,
-                    self.system.E,
                 )
 
-                regions: list[Polytope] = self.classifiers[i].get_partition
+                regions: list[Polytope] = self.classifiers[i].get_partition()
                 all_regions.extend(regions)
 
                 for region in regions:  # TODO remove this check
@@ -428,7 +429,7 @@ class Agent:
             The regions."""
         regions = []
         for i in range(self.nr):
-            regions.extend(self.parc.get_partition(i))
+            regions.extend(self.classifiers[i].get_partition())
         return regions
 
     def plot_iteration(
@@ -534,7 +535,8 @@ class Agent:
         ----------
         path : str
             The path to the file."""
-        self.parc.save(path)
+        for i in range(self.nr):
+            self.classifiers[i].save(i)
 
     def load(self, path: str) -> None:
         """Load the predictor from a file.
@@ -543,4 +545,5 @@ class Agent:
         ----------
         path : str
             The path to the file."""
-        self.parc.load(path, self.system.D, self.system.E)
+        for i in range(self.nr):
+            self.classifiers[i].load(i)

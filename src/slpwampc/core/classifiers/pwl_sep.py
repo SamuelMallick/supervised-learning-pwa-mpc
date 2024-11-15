@@ -12,9 +12,9 @@ class PwlSep(PartitionClassifier):
     programming, as presented in Bennett and Mangasarian (1992)."""
 
     def __init__(self, A: np.ndarray, b: np.ndarray):
-        """Initialize the classifier. The inequality Ax <= b defines 
+        """Initialize the classifier. The inequality Ax <= b defines
         the region over which the classifier partitions.
-        
+
         Parameters
         ----------
         A : np.ndarray
@@ -29,7 +29,7 @@ class PwlSep(PartitionClassifier):
 
     def get_partition(self) -> list[Polytope]:
         return self.regions
-    
+
     def predict(self, x: np.ndarray) -> int:
         """Predict the label for a given state.
 
@@ -67,9 +67,11 @@ class PwlSep(PartitionClassifier):
         n = X[0].shape[1]  # dimension of the data
 
         # each iteration kmeans clustering splits the clusters at these indices
-        indices_to_split: list[int] = []    
+        indices_to_split: list[int] = []
 
-        while True: # iterate until zero cost returned by solver, indicating piecewise linear seperation
+        while (
+            True
+        ):  # iterate until zero cost returned by solver, indicating piecewise linear seperation
             for i in indices_to_split:
                 new_clusters = self.kmeans.fit_predict(X[i])
                 X_i_ = X[i]
@@ -125,7 +127,9 @@ class PwlSep(PartitionClassifier):
                             cnt += 1
 
                             row_ind[cnt] = row
-                            col_ind[cnt] = n * k + k + (k - 1) * sum_m_i + row_ * m_i + l
+                            col_ind[cnt] = (
+                                n * k + k + (k - 1) * sum_m_i + row_ * m_i + l
+                            )
                             data[cnt] = -1
                             cnt += 1
 

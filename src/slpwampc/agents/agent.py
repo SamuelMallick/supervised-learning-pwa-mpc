@@ -281,7 +281,13 @@ class Agent:
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if sol.success:
-                                    infeas_vertices_ = self.add_circle_points(vertex.reshape(1, -1, 1), 0.1, 3)
+                                    infeas_vertices_ = self.add_circle_points(
+                                        vertex.reshape(1, -1, 1),
+                                        0.1,
+                                        5,
+                                        np.vstack((self.system.D, self.system.S[i])),
+                                        np.vstack((self.system.E, self.system.T[i])),
+                                    )
                                     infeas_vertices = np.vstack(
                                         (infeas_vertices, infeas_vertices_)
                                     )
@@ -301,7 +307,13 @@ class Agent:
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if not sol.success:
-                                    infeas_vertices_ = self.add_circle_points(vertex.reshape(1, -1, 1), 0.1, 3)
+                                    infeas_vertices_ = self.add_circle_points(
+                                        vertex.reshape(1, -1, 1),
+                                        0.1,
+                                        5,
+                                        np.vstack((self.system.D, self.system.S[i])),
+                                        np.vstack((self.system.E, self.system.T[i])),
+                                    )
                                     infeas_vertices = np.vstack(
                                         (infeas_vertices, infeas_vertices_)
                                     )
@@ -531,9 +543,15 @@ class Agent:
             plt.pause(0.01)
 
     def add_circle_points(
-        self, points: np.ndarray, radius: float, num_circle_points: int
+        self,
+        points: np.ndarray,
+        radius: float,
+        num_circle_points: int,
+        A: np.ndarray,
+        b: np.ndarray,
     ) -> np.ndarray:
-        """Add points on a circle around the origin to the given points.
+        """Add points on a circle around the origin to the given points, with points outside the
+        region Ax <= b removed.
 
         Parameters
         ----------
@@ -543,6 +561,10 @@ class Agent:
             The radius of the circle.
         num_circle_points : int
             The number of points on the circle.
+        A : np.ndarray
+            The matrix A in the inequality Ax <= b.
+        b : np.ndarray
+            The vector b in the inequality Ax <= b.
 
         Returns
         -------
@@ -558,7 +580,9 @@ class Agent:
             num_circle_points, n, nx, 1
         )
         new_points = (points + circle_points).reshape(-1, nx, 1)
-        new_points = new_points[np.all(new_points[:, :, 0]@self.system.D.T <= self.system.E.squeeze(), axis=1)]
+        new_points = new_points[
+            np.all(new_points[:, :, 0] @ A.T <= b.squeeze(), axis=1)
+        ]
         return np.concatenate((new_points, points), axis=0)
 
     def save(self, path: str) -> None:

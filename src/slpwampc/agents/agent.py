@@ -3,7 +3,7 @@ import numpy as np
 from csnlp.wrappers.mpc.pwa_mpc import PwaMpc
 from gymnasium import Env
 
-from slpwampc.core.classifier import PartitionClassifier
+from slpwampc.core.classifiers.classifier import PartitionClassifier
 from slpwampc.core.systems import PwaSystem
 from slpwampc.misc.action_mapping import PwaActionMapper
 from slpwampc.misc.regions import Polytope

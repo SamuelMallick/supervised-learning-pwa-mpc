@@ -6,7 +6,7 @@ from model import Model
 from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
-from slpwampc.core.parc import ParcEnsemble
+from slpwampc.core.classifiers.parc import ParcEnsemble
 
 warnings.filterwarnings("ignore")
 

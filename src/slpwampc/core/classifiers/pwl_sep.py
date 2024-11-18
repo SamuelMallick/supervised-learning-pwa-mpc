@@ -23,7 +23,6 @@ class PwlSep(PartitionClassifier):
             The vector b in the inequality Ax <= b.
         """
         self.regions: list[Polytope] = []
-        self.labels: list[int] = []
         self.A, self.b = A, b
         self.kmeans = KMeans(n_clusters=2)
 
@@ -45,7 +44,7 @@ class PwlSep(PartitionClassifier):
         """
         for i, region in enumerate(self.regions):
             if not region.is_empty and np.all(region.A @ x <= region.b):
-                return self.labels[i]
+                return region.label
         raise ValueError("No region found for the given state.")
 
     def fit(self, X: np.ndarray, Y: np.ndarray) -> None:
@@ -59,8 +58,8 @@ class PwlSep(PartitionClassifier):
             The labels.
         """
         # TODO confirm all points are within the region
-        self.labels = list(np.unique(Y))
-        k = len(self.labels)  # number of clusters
+        labels = list(np.unique(Y))
+        k = len(labels)  # number of clusters
         X = [
             X[Y.squeeze() == int(i), :] for i in np.unique(Y)
         ]  # group data points by cluster
@@ -77,7 +76,7 @@ class PwlSep(PartitionClassifier):
                 X_i_ = X[i]
                 X[i] = X_i_[new_clusters == 0]
                 X.append(X_i_[new_clusters == 1])
-                self.labels.append(self.labels[i])
+                labels.append(labels[i])
                 k += 1
             m = [X[i].shape[0] for i in range(k)]  # number of points in each cluster
             f = cs.vertcat(
@@ -147,7 +146,9 @@ class PwlSep(PartitionClassifier):
             qp = {}
             qp["a"] = A.sparsity()
             # TODO handle error on fail
-            S = cs.conic("S", "gurobi", qp, {"gurobi.OutputFlag": 0, "error_on_fail": False})
+            S = cs.conic(
+                "S", "gurobi", qp, {"gurobi.OutputFlag": 0, "error_on_fail": False}
+            )
             result = S(g=f, a=A, uba=b)
 
             # TODO check if the optimization was successful
@@ -174,4 +175,4 @@ class PwlSep(PartitionClassifier):
                 if j != i:
                     A_ = np.vstack([A_, omega[j, :] - omega[i, :]])
                     b_ = np.vstack([b_, gamma[j] - gamma[i]])
-            self.regions.append(Polytope(A_, b_, label=self.labels[i]))
+            self.regions.append(Polytope(A_, b_, label=labels[i]))

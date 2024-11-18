@@ -1,36 +1,109 @@
 import numpy as np
 from pyparc.parc import PARC
 
+from slpwampc.core.classifiers.classifier import PartitionClassifier
 from slpwampc.misc.regions import Polytope
 
 
-class Parc(PARC):
-    regions: list[Polytope] = []
+class Parc(PARC, PartitionClassifier):
+    """A classifier that creates a convex partition via
+    clustering a softmax regression, as presented in Bemporad (2024)."""
 
-    def fit(
+    def __init__(
         self,
-        X: np.ndarray,
-        Y: np.ndarray,
         A: np.ndarray,
         b: np.ndarray,
-        categorical=None,
+        K=15,
+        alpha=1.0e2,
+        maxiter=150,
+        sigma=15,
+        separation="Softmax",
+        verbose=0,
+        min_number=1,
     ):
-        # TODO docstring
-        super().fit(X, Y, categorical=categorical)
-        self._set_partition(A, b)
-
-    def get_partition(self) -> list[Polytope]:
-        return self.regions
-
-    def _set_partition(self, A: np.ndarray, b: np.ndarray) -> None:
-        """Return the partition as a collection of regions within the space Ax <= b.
+        """Initialize the classifier. The inequality Ax <= b defines
+        the region over which the classifier partitions.
 
         Parameters
         ----------
         A : np.ndarray
-            The matrix A in the inequality Ax <= b
+            The matrix A in the inequality Ax <= b.
         b : np.ndarray
-            The vector b in the inequality Ax <= b"""
+            The vector b in the inequality Ax <= b.
+        K : int
+            number of linear affine regressor/classifiers in PWA predictor.
+        alpha : float
+            L2-regularization term.
+        maxiter : int
+            maximum number of block-coordinate descent iterations.
+        sigma : float
+            tradeoff coefficient between PWL separability and quality of target fit.
+        separation : str
+            type of PWL separation used, either 'Voronoi' or 'Softmax'.
+        verbose : int
+            verbosity level (0 = none).
+        min_number : int
+            minimum number of points allowed per cluster. At the end
+            of the procedure, points in excessively small clusters
+            are reassigned to cluster of closest point (default: nx+1).
+        """
+        self.regions: list[Polytope] = []
+        self.A, self.b = A, b
+        PARC.__init__(
+            self,
+            K=K,
+            alpha=alpha,
+            maxiter=maxiter,
+            sigma=sigma,
+            separation=separation,
+            verbose=verbose,
+            min_number=min_number,
+        )
+
+    def fit(self, X: np.ndarray, Y: np.ndarray) -> None:
+        """Fit the classifier to the data.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            The states.
+        Y : np.ndarray
+            The labels.
+        """
+        # TODO confirm all points are within the region
+        super().fit(
+            X, Y, categorical=[True]
+        )  # TODO add comment explaining why categorical is set to True
+        self._set_partition()
+
+    def get_partition(self) -> list[Polytope]:
+        return self.regions
+
+    def predict(self, x: np.ndarray) -> int:
+        """Predict the label for a given state.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            The state.
+
+        Returns
+        -------
+        int
+            The label.
+        """
+        if (
+            len(self.regions) == 0
+        ):  # if no partition has been set, use the underlying classifier
+            return int(PARC.predict(self, x)[0].item())
+        for i, region in enumerate(self.regions):
+            if not region.is_empty and np.all(region.A @ x <= region.b):
+                return region.label
+        raise ValueError("No region found for the given state.")
+
+    def _set_partition(self) -> None:
+        """Return the partition as a collection of regions within the space
+        self.Ax <= self.b."""
         nx = self.nx
         ind = np.arange(2, nx, dtype=int)
         values = np.zeros(nx - 2)
@@ -41,13 +114,12 @@ class Parc(PARC):
         xbar = np.delete(self.xbar, ind, axis=1)
         K = self.K
 
-        # Plot PWL partition
-        A_ = np.vstack((A, np.zeros((K - 1, 2))))
-        b_ = np.vstack((b, np.zeros((K - 1, 1))))
+        A_ = np.vstack((self.A, np.zeros((K - 1, 2))))
+        b_ = np.vstack((self.b, np.zeros((K - 1, 1))))
         regions = list()
 
         for j in range(0, K):
-            i = b.shape[0]
+            i = self.b.shape[0]
             for h in range(0, K):
                 if h != j:
                     A_[i, :] = omega[h, :] - omega[j, :]
@@ -56,61 +128,5 @@ class Parc(PARC):
             regions.append(Polytope(A_, b_))
 
         for region in regions:
-            region.set_label(lambda x: self.predict(x.T)[0].item())
+            region.set_label(lambda x: self.predict(x))
         self.regions = regions
-
-
-class ParcEnsemble:
-    def __init__(
-        self,
-        num_classifiers: int,
-        regions: list[tuple[np.ndarray, np.ndarray]],
-        sigma: float = 15,
-        alpha: float = 1.0e2,
-        K: int = 15,
-    ):
-        # TODO check dimensions match for num classifiers and regions - or maybe just use regions
-        self.num_classifiers = num_classifiers
-        self.classifiers: list[Parc] = [
-            Parc(
-                K=K,
-                alpha=alpha,
-                maxiter=150,
-                sigma=sigma,
-                separation="Softmax",
-                verbose=0,
-                min_number=1,
-            )
-            for _ in range(num_classifiers)
-        ]
-        self.regions = regions
-
-    def predict(self, x: np.ndarray) -> np.ndarray:
-        for i, region in enumerate(self.regions):
-            A, b = region
-            if (A @ x.T <= b).all():
-                return self.classifiers[i].predict(x)
-        raise ValueError(f"No region found for state {x}")
-
-    def fit(self, i, X, Y, A, b, categorical=None):
-        self.classifiers[i].fit(
-            X,
-            Y,
-            np.vstack((A, self.regions[i][0])),
-            np.vstack((b, self.regions[i][1])),
-            categorical=categorical,
-        )
-
-    def get_partition(self, i: int) -> list[Polytope]:
-        return self.classifiers[i].get_partition()
-
-    def save(self, filename: str):
-        for i, classifier in enumerate(self.classifiers):
-            classifier.save(f"{filename}_{i}")
-
-    def load(self, filename: str, A: np.ndarray, b: np.ndarray):
-        for i, classifier in enumerate(self.classifiers):
-            classifier.load(f"{filename}_{i}")
-            classifier._set_partition(
-                np.vstack((A, self.regions[i][0])), np.vstack((b, self.regions[i][1]))
-            )

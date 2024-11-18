@@ -1,10 +1,10 @@
-import numpy as np
 import casadi as cs
+import numpy as np
 from scipy.sparse import csr_matrix
+from sklearn.cluster import KMeans
+
 from slpwampc.core.classifiers.classifier import PartitionClassifier
 from slpwampc.misc.regions import Polytope
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
 
 
 class PwlSep(PartitionClassifier):

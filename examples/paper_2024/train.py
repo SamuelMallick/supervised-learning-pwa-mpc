@@ -39,7 +39,25 @@ initial_state_samples = [
     for i in range(2)
 ]
 
-classifiers = [PwlSep(A=np.vstack([S, system.D]), b=np.vstack([T, system.E])) for S, T in zip(system.S, system.T)]
+# classifiers = [
+#     PwlSep(A=np.vstack([S, system.D]), b=np.vstack([T, system.E]))
+#     for S, T in zip(system.S, system.T)
+# ]
+
+classifiers = [
+    Parc(
+        A=np.vstack([S, system.D]),
+        b=np.vstack([T, system.E]),
+        K=15,
+        alpha=1.0e2,
+        maxiter=150,
+        sigma=15,
+        separation="Softmax",
+        verbose=0,
+        min_number=1,
+    )
+    for S, T in zip(system.S, system.T)
+]
 
 agent = Agent(
     system=system,

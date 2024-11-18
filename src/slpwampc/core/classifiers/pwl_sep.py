@@ -146,7 +146,8 @@ class PwlSep(PartitionClassifier):
             A = cs.DM(A)
             qp = {}
             qp["a"] = A.sparsity()
-            S = cs.conic("S", "gurobi", qp, {"gurobi.OutputFlag": 0})
+            # TODO handle error on fail
+            S = cs.conic("S", "gurobi", qp, {"gurobi.OutputFlag": 0, "error_on_fail": False})
             result = S(g=f, a=A, uba=b)
 
             # TODO check if the optimization was successful

@@ -284,7 +284,7 @@ class Agent:
                                     infeas_vertices_ = self.add_circle_points(
                                         vertex.reshape(1, -1, 1),
                                         0.1,
-                                        5,
+                                        0,
                                         np.vstack((self.system.D, self.system.S[i])),
                                         np.vstack((self.system.E, self.system.T[i])),
                                     )
@@ -310,7 +310,7 @@ class Agent:
                                     infeas_vertices_ = self.add_circle_points(
                                         vertex.reshape(1, -1, 1),
                                         0.1,
-                                        5,
+                                        0,
                                         np.vstack((self.system.D, self.system.S[i])),
                                         np.vstack((self.system.E, self.system.T[i])),
                                     )
@@ -324,6 +324,14 @@ class Agent:
                     infeas_vertices = np.array(
                         list(set(map(tuple, infeas_vertices.squeeze(-1))))
                     )[:, :, None]
+                    if not self.check_new_points(state_sets[i], infeas_vertices):
+                        infeas_vertices = self.add_circle_points(
+                            infeas_vertices,
+                            0.01,
+                            10,
+                            np.vstack((self.system.D, self.system.S[i])),
+                            np.vstack((self.system.E, self.system.T[i])),
+                        )
                 else:
                     finished_regions.append(i)
                 percentage_infeas = (
@@ -584,6 +592,29 @@ class Agent:
             np.all(new_points[:, :, 0] @ A.T <= b.squeeze(), axis=1)
         ]
         return np.concatenate((new_points, points), axis=0)
+
+    def check_new_points(self, X: np.ndarray, Y: np.ndarray, eps: float = 0.01) -> bool:
+        """Checks if at least one point in Y is not in X, with equality measured with toleramnce
+        eps.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            The first set of points, shape = (N, nx).
+        Y : np.ndarray
+            The second set of points, that are checked to be new, shape = (n, nx).
+
+        Returns
+        -------
+        bool
+            True if at least one point in Y is not in X, otherwise False."""
+        if X.shape[1] != Y.shape[1]:
+            raise ValueError("Points must have the same number of dimensions.")
+        differences = Y[:, None, :] - X[None, :, :]  # Shape (n, N, nx)
+        distances = np.linalg.norm(differences, axis=2)
+        if np.max(np.min(distances, axis=0)) > eps:
+            return True
+        return False
 
     def save(self, path: str) -> None:
         """Save the predictor to a file.

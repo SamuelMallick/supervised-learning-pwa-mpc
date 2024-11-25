@@ -21,6 +21,11 @@ def mpc_as_linear_program(
         mpc_data["Q"],
         mpc_data["R"],
     )
+    if "P" not in mpc_data:
+        P = Q
+    else:
+        P = mpc_data["P"]
+
     if not isinstance(A, list):
         A = [A] * N
         B = [B] * N
@@ -46,7 +51,9 @@ def mpc_as_linear_program(
     G = np.zeros((0, nz))
     W = np.zeros((0, 1))
     S = np.zeros((0, nx))
-    for i in range(N):
+    for i in range(N+1):
+        if i == N:
+            Q = P
         G = np.vstack(
             [
                 G,
@@ -273,7 +280,7 @@ def mpc_as_linear_program(
     # converting control penalty
     D = np.zeros((0, nz))
     E = np.zeros((0, 1))
-    # TODO shrink the following code
+    # # TODO shrink the following code
     for i in range(N):
         D = np.vstack(
             [
@@ -347,20 +354,32 @@ def mpc_as_linear_program(
     return {"f": f, "G": G, "W": W, "S": S, "D": D, "E": E}
 
 
-N = 5
-Q = 2 * np.eye(2)
-R = np.eye(1)
-# A = np.array([[1, 1], [0, 1]])
-# B = np.array([[0], [1]])
-# c = np.array([[0.1], [0.1]])
-A = [np.random.rand(2, 2) for _ in range(N)]
-B = [np.random.rand(2, 1) for _ in range(N)]
-c = [np.random.rand(2, 1) for _ in range(N)]
-F = np.array([[1], [-1]])
-G = np.array([[1], [1]])
-D = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
-E = np.array([[1], [1], [1], [1]])
-A_f = np.array([[1, 1], [0, 1]])
-b_f = np.array([[1], [1]])
-mpc_data = {"A": A, "B": B, "c": c, "Q": Q, "R": R, "F": F, "G": G, "D": D, "E": E, "A_f": A_f, "b_f": b_f}
-mpc_as_linear_program(mpc_data, N)
+# N = 5
+# Q = 2 * np.eye(2)
+# R = np.eye(1)
+# # A = np.array([[1, 1], [0, 1]])
+# # B = np.array([[0], [1]])
+# # c = np.array([[0.1], [0.1]])
+# A = [np.random.rand(2, 2) for _ in range(N)]
+# B = [np.random.rand(2, 1) for _ in range(N)]
+# c = [np.random.rand(2, 1) for _ in range(N)]
+# F = np.array([[1], [-1]])
+# G = np.array([[1], [1]])
+# D = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
+# E = np.array([[1], [1], [1], [1]])
+# A_f = np.array([[1, 1], [0, 1]])
+# b_f = np.array([[1], [1]])
+# mpc_data = {
+#     "A": A,
+#     "B": B,
+#     "c": c,
+#     "Q": Q,
+#     "R": R,
+#     "F": F,
+#     "G": G,
+#     "D": D,
+#     "E": E,
+#     "A_f": A_f,
+#     "b_f": b_f,
+# }
+# mpc_as_linear_program(mpc_data, N)

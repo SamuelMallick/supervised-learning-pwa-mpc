@@ -1,6 +1,7 @@
-from typing import Literal
-import numpy as np
 from functools import reduce
+from typing import Literal
+
+import numpy as np
 
 
 def mpc_as_linear_program(
@@ -51,7 +52,7 @@ def mpc_as_linear_program(
     G = np.zeros((0, nz))
     W = np.zeros((0, 1))
     S = np.zeros((0, nx))
-    for i in range(N+1):
+    for i in range(N + 1):
         if i == N:
             Q = P
         G = np.vstack(
@@ -166,11 +167,14 @@ def mpc_as_linear_program(
     # converting state constraints Dx <= E
     if "D" in mpc_data and "E" in mpc_data:
         D_x, E_x = mpc_data["D"], mpc_data["E"]
-        if not D_x.shape[1] == nx:
+        if not isinstance(D_x, list):
+            D_x = [D_x] * (N + 1)
+            E_x = [E_x] * (N + 1)
+        if not D_x[0].shape[1] == nx:
             raise ValueError("D must have the same number of columns as x")
 
-        nc = D_x.shape[0]
         for i in range(N + 1):
+            nc = D_x[i].shape[0]
             G = np.vstack(
                 [
                     G,
@@ -187,7 +191,7 @@ def mpc_as_linear_program(
                                 if i == 0
                                 else np.hstack(
                                     [
-                                        D_x
+                                        D_x[i]
                                         @ reduce(
                                             np.matmul,
                                             [np.eye(nx), *(A[(j + 1) : i][::-1])],
@@ -210,12 +214,12 @@ def mpc_as_linear_program(
                 [
                     W,
                     (
-                        E_x
+                        E_x[i]
                         if i == 0
-                        else E_x
+                        else E_x[i]
                         - sum(
                             [
-                                D_x
+                                D_x[i]
                                 @ reduce(
                                     np.matmul, [np.eye(nx), *(A[(j + 1) : i][::-1])]
                                 )
@@ -226,7 +230,9 @@ def mpc_as_linear_program(
                     ),
                 ]
             )
-            S = np.vstack([S, -(D_x @ reduce(np.matmul, [np.eye(nx), *(A[:i][::-1])]))])
+            S = np.vstack(
+                [S, -(D_x[i] @ reduce(np.matmul, [np.eye(nx), *(A[:i][::-1])]))]
+            )
 
     # converting terminal constraints A_f x <= b_f
     if "A_f" in mpc_data and "b_f" in mpc_data:

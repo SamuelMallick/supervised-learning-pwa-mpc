@@ -1,13 +1,14 @@
-import numpy as np
-from slpwampc.utils.conversions import mpc_as_linear_program
 import os
 import sys
+
 import casadi as cs
+import numpy as np
+
+from slpwampc.utils.conversions import mpc_as_linear_program
 
 sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
-from examples.paper_2024.mpc import MixedIntegerMpc, TimeVaryingAffineMpc
-
+from examples.paper_2024.mpc import MixedIntegerMpc
 
 np_random = np.random.default_rng(1)
 
@@ -23,7 +24,6 @@ for _ in range(1000):
     else:
         raise ValueError("MPC solve failed")
 
-
     # set up LP
     problem_data = mpc_as_linear_program(
         {
@@ -32,8 +32,16 @@ for _ in range(1000):
             "A": [system_dict["A"][i.item()] for i in switching_sequence],
             "B": [system_dict["B"][i.item()] for i in switching_sequence],
             "c": [system_dict["c"][i.item()] for i in switching_sequence],
-            "D": system_dict["D"],
-            "E": system_dict["E"],
+            "D": [
+                np.vstack([system_dict["D"], system_dict["S"][i.item()]])
+                for i in switching_sequence
+            ]
+            + [system_dict["D"]],
+            "E": [
+                np.vstack([system_dict["E"], system_dict["T"][i.item()]])
+                for i in switching_sequence
+            ]
+            + [system_dict["E"]],
             "F": system_dict["F"],
             "G": system_dict["G"],
             "A_f": Model.X_f[0],
@@ -53,9 +61,13 @@ for _ in range(1000):
     b = np.vstack([W + S @ x0, E])
     lp = {}
     lp["a"] = cs.DM(A).sparsity()
-    prob = cs.conic("S", "gurobi", lp, {"gurobi.DualReductions": 1,"gurobi.OutputFlag": 1, "error_on_fail": False})
+    prob = cs.conic(
+        "S",
+        "gurobi",
+        lp,
+        {"gurobi.DualReductions": 1, "gurobi.OutputFlag": 1, "error_on_fail": False},
+    )
     # prob = cs.conic("S", "clp", lp, {"error_on_fail": False})
     result = prob(g=f.T, a=A, uba=b)
     if np.fabs(sol.f - result["cost"]) > 1e-6:
         raise ValueError("Costs do not match")
-

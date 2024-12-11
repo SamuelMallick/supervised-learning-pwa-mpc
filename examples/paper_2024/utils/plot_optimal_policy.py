@@ -9,7 +9,7 @@ sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
 from slpwampc.misc.regions import Polytope
 
-N = 5
+N = 11
 system = Model.get_system()
 
 with open(
@@ -34,8 +34,8 @@ for o in np.unique(actions_opt):
         marker="s",
         color=f"C{o}",
     )
-plt.xlim(-6.2, 8.2)
-plt.ylim(-10.5, 10.5)
+plt.xlim(-12, 12)
+plt.ylim(-12, 12)
 ax.axis("off")
 # ax.legend()
 plt.show()

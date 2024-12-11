@@ -89,6 +89,8 @@ class Model:
             The number of points to sample for random strategy, by default 100.
         d : float, optional
             The spacing between grid points for grid strategy, by default 0.1.
+        region : int, optional
+            The region to sample points from, if None, points sampled from entire state space.
         """
         if sample_strategy == "random":
             return random_sample_region(

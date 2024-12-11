@@ -1,7 +1,8 @@
+import matplotlib.pyplot as plt
 import numpy as np
+
 from slpwampc.core.classifiers.pwl_sep import PwlSep
 from slpwampc.misc.regions import Polytope
-import matplotlib.pyplot as plt
 
 np_random = np.random.default_rng(1)
 

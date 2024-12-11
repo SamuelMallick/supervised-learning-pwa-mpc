@@ -207,6 +207,7 @@ class Agent:
             elif self.nx == 3:
                 self.fig = plt.figure()
                 self.ax = self.fig.add_subplot(111, projection="3d")
+            self.ax.set_axis_off()
             plt.ioff()
 
         state_train_sets = [np.empty((0, self.nx)) for _ in range(self.nr)]
@@ -487,9 +488,10 @@ class Agent:
 
         self.ax.set_xlim(-12, 12)
         self.ax.set_ylim(-12, 12)
+        self.ax.set_axis_off()
 
         for i, label in enumerate(unique_labels):
-            self.ax.set_title(f"label: {label}")
+            # self.ax.set_title(f"label: {label}")
             for region in [r for r in regions if not r.is_empty and r.label == label]:
                 if not region.is_empty:
                     region.plot(
@@ -548,6 +550,7 @@ class Agent:
             plt.show()
         else:
             self.fig.canvas.draw()
+            # plt.savefig(f"iter_{iter}.png")
             plt.pause(0.01)
 
     def add_circle_points(

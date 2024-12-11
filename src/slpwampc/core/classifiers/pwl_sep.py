@@ -47,7 +47,7 @@ class PwlSep(PartitionClassifier):
                 return region.label
         raise ValueError("No region found for the given state.")
 
-    def fit(self, X: np.ndarray, Y: np.ndarray) -> None:
+    def fit(self, X: np.ndarray, Y: np.ndarray, max_iters: int = np.inf) -> None:
         """Fit the classifier to the data.
 
         Parameters
@@ -56,6 +56,10 @@ class PwlSep(PartitionClassifier):
             The states.
         Y : np.ndarray
             The labels.
+        max_iters : int, optional
+            Max number of iterations of solving the linear program and
+            k-means clustering. When reached an error minimzing
+            partition of the data is returned.
         """
         # TODO confirm all points are within the region
         labels = list(np.unique(Y))
@@ -67,17 +71,19 @@ class PwlSep(PartitionClassifier):
 
         # each iteration kmeans clustering splits the clusters at these indices
         indices_to_split: list[int] = []
-
+        iter = 0
         while (
-            True
+            iter < max_iters
         ):  # iterate until zero cost returned by solver, indicating piecewise linear seperation
+            iter += 1
             for i in indices_to_split:
-                new_clusters = self.kmeans.fit_predict(X[i])
-                X_i_ = X[i]
-                X[i] = X_i_[new_clusters == 0]
-                X.append(X_i_[new_clusters == 1])
-                labels.append(labels[i])
-                k += 1
+                if X[i].shape[0] > 1:
+                    new_clusters = self.kmeans.fit_predict(X[i])
+                    X_i_ = X[i]
+                    X[i] = X_i_[new_clusters == 0]
+                    X.append(X_i_[new_clusters == 1])
+                    labels.append(labels[i])
+                    k += 1
             m = [X[i].shape[0] for i in range(k)]  # number of points in each cluster
             f = cs.vertcat(
                 cs.DM(k * n, 1),  # zeroing out the omega

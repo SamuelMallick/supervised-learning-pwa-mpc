@@ -284,15 +284,8 @@ class Agent:
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if sol.success:
-                                    infeas_vertices_ = self.add_circle_points(
-                                        vertex.reshape(1, -1, 1),
-                                        0.1,
-                                        0,
-                                        np.vstack((self.system.D, self.system.S[i])),
-                                        np.vstack((self.system.E, self.system.T[i])),
-                                    )
                                     infeas_vertices = np.vstack(
-                                        (infeas_vertices, infeas_vertices_)
+                                        (infeas_vertices, vertex.reshape(1, -1, 1))
                                     )
                         else:
                             # action mapper returns tensor that is vectorizable. Hence we need to convert it to numpy array and remove extra dims
@@ -310,15 +303,8 @@ class Agent:
                                     {"x_0": vertex.reshape(-1, 1)}
                                 )
                                 if not sol.success:
-                                    infeas_vertices_ = self.add_circle_points(
-                                        vertex.reshape(1, -1, 1),
-                                        0.1,
-                                        0,
-                                        np.vstack((self.system.D, self.system.S[i])),
-                                        np.vstack((self.system.E, self.system.T[i])),
-                                    )
                                     infeas_vertices = np.vstack(
-                                        (infeas_vertices, infeas_vertices_)
+                                        (infeas_vertices, vertex.reshape(1, -1, 1))
                                     )
 
                 # remove duplicates
@@ -328,13 +314,16 @@ class Agent:
                         list(set(map(tuple, infeas_vertices.squeeze(-1))))
                     )[:, :, None]
                     if not self.check_new_points(state_sets[i], infeas_vertices):
-                        infeas_vertices = self.add_circle_points(
-                            infeas_vertices,
-                            0.01,
-                            10,
-                            np.vstack((self.system.D, self.system.S[i])),
-                            np.vstack((self.system.E, self.system.T[i])),
-                        )
+                        if self.nx == 2:
+                            infeas_vertices = self.add_circle_points(
+                                infeas_vertices,
+                                0.01,
+                                10,
+                                np.vstack((self.system.D, self.system.S[i])),
+                                np.vstack((self.system.E, self.system.T[i])),
+                            )
+                        else:
+                            Warning("no noticable change in training points")
                 else:
                     finished_regions.append(i)
                 percentage_infeas = (

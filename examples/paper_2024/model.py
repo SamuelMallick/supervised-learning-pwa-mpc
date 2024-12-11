@@ -1,9 +1,6 @@
-from typing import Literal
-
 import numpy as np
 
 from slpwampc.core.systems import PwaSystem
-from slpwampc.misc.sampling import grid_sample_region, random_sample_region
 
 
 class Model:
@@ -66,64 +63,3 @@ class Model:
     @staticmethod
     def get_system():
         return PwaSystem(Model.system)
-
-    @staticmethod
-    def sample_state_space(
-        np_random: np.random.Generator,
-        sample_strategy: Literal["random", "grid", "focused"] = "random",
-        num_points: int = 100,
-        d: float = 0.1,
-        region: int | None = None,
-    ) -> list[np.ndarray]:
-        """Sample points from the state space of the system.
-
-        Parameters
-        ----------
-        np_random : np.random.Generator
-            The random number generator.
-        sample_strategy : Literal["random", "grid", "focused"], optional
-            The strategy to sample points. If random, num_points points are sampled uniformly at random from the state space.
-            If grid, points are sampled on a grid with spacing d.
-            If focused, points are sampled in regions of the state space where the sboundaries are. By default "random".
-        num_points : int, optional
-            The number of points to sample for random strategy, by default 100.
-        d : float, optional
-            The spacing between grid points for grid strategy, by default 0.1.
-        region : int, optional
-            The region to sample points from, if None, points sampled from entire state space.
-        """
-        if sample_strategy == "random":
-            return random_sample_region(
-                (
-                    np.vstack((Model.S[region], Model.D))
-                    if region is not None
-                    else Model.D
-                ),
-                (
-                    np.vstack((Model.T[region], Model.E))
-                    if region is not None
-                    else Model.E
-                ),
-                num_points,
-                np_random,
-            )
-        elif sample_strategy == "grid":
-            if region is None:
-                regions_points = [
-                    grid_sample_region(
-                        np.vstack((S, Model.D)), np.vstack((T, Model.E)), d
-                    )
-                    for S, T in zip(Model.S, Model.T)
-                ]
-                return np.concatenate(
-                    regions_points,
-                    axis=0,
-                )
-            else:
-                return grid_sample_region(
-                    np.vstack((Model.S[region], Model.D)),
-                    np.vstack((Model.T[region], Model.E)),
-                    d,
-                )
-        else:
-            raise NotImplementedError()

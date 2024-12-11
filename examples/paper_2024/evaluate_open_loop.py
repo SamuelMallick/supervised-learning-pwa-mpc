@@ -6,6 +6,7 @@ from model import Model
 from mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
+from slpwampc.misc.sampling import sample_state_space
 
 np_random = np.random.default_rng(0)
 np.random.seed(0)
@@ -30,8 +31,8 @@ agent = Agent(
 agent.load(f"examples/paper_2024/results/parc_agent_N_{N}")
 
 if GENERATE:
-    initial_state_samples = Model.sample_state_space(
-        d=0.2, np_random=np_random, sample_strategy="grid", num_points=2000
+    initial_state_samples = sample_state_space(
+        system, d=0.2, np_random=np_random, sample_strategy="grid", num_points=2000
     )
     states = []
     costs_opt = []

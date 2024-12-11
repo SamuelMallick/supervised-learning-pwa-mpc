@@ -1,5 +1,73 @@
+from typing import Literal
+
 import numpy as np
 from scipy.optimize import linprog
+
+from slpwampc.core.systems import PwaSystem
+
+
+def sample_state_space(
+    system: PwaSystem,
+    np_random: np.random.Generator,
+    sample_strategy: Literal["random", "grid", "focused"] = "random",
+    num_points: int = 100,
+    d: float = 0.1,
+    region: int | None = None,
+) -> np.ndarray:
+    """Sample points from the state space of the system.
+
+    Parameters
+    ----------
+    system : PwaSystem
+        The system to sample points from.
+    np_random : np.random.Generator
+        The random number generator.
+    sample_strategy : Literal["random", "grid", "focused"], optional
+        The strategy to sample points. If random, num_points points are sampled uniformly at random from the state space.
+        If grid, points are sampled on a grid with spacing d.
+        If focused, points are sampled in regions of the state space where the sboundaries are. By default "random".
+    num_points : int, optional
+        The number of points to sample for random strategy, by default 100.
+    d : float, optional
+        The spacing between grid points for grid strategy, by default 0.1.
+    region : int, optional
+        The region to sample points from, if None, points sampled from entire state space.
+    """
+    if sample_strategy == "random":
+        return random_sample_region(
+            (
+                np.vstack((system.S[region], system.D))
+                if region is not None
+                else system.D
+            ),
+            (
+                np.vstack((system.T[region], system.E))
+                if region is not None
+                else system.E
+            ),
+            num_points,
+            np_random,
+        )
+    elif sample_strategy == "grid":
+        if region is None:
+            regions_points = [
+                grid_sample_region(
+                    np.vstack((S, system.D)), np.vstack((T, system.E)), d
+                )
+                for S, T in zip(system.S, system.T)
+            ]
+            return np.concatenate(
+                regions_points,
+                axis=0,
+            )
+        else:
+            return grid_sample_region(
+                np.vstack((system.S[region], system.D)),
+                np.vstack((system.T[region], system.E)),
+                d,
+            )
+    else:
+        raise NotImplementedError()
 
 
 def random_sample_region(

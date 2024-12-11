@@ -10,6 +10,7 @@ sys.path.append(os.getcwd())
 from examples.paper_2024.model import Model
 from examples.paper_2024.mpc import MixedIntegerMpc, TimeVaryingAffineMpc
 from slpwampc.misc.action_mapping import PwaActionMapper
+from slpwampc.misc.sampling import sample_state_space
 
 np_random = np.random.default_rng(0)
 
@@ -25,9 +26,10 @@ time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 agent = Agent(system, time_varying_affine_mpc=time_varying_affine_mpc, classifiers=[])
 
 action_mapper = PwaActionMapper(len(system.A), N)
-validation_samples = Model.sample_state_space(
-    d=0.1, np_random=np_random, sample_strategy="grid"
+validation_samples = sample_state_space(
+    system, d=0.1, np_random=np_random, sample_strategy="grid"
 )
+
 valid_validation_states: list[np.ndarray] = []
 optimal_validation_actions: list[int] = []
 for idx, state in enumerate(validation_samples):

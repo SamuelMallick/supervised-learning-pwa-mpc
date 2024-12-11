@@ -7,6 +7,7 @@ from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
 from slpwampc.core.classifiers.pwl_sep import PwlSep
+from slpwampc.misc.sampling import sample_state_space
 
 warnings.filterwarnings("ignore")
 
@@ -15,7 +16,7 @@ np.random.seed(1)
 
 SAVE = False
 
-N = 11  # prediction horizon
+N = 5  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu
@@ -28,12 +29,9 @@ mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
 time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
 tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.5, X_f=Model.X_f)
 
-# initial_state_samples = Model.sample_state_space(
-#     d=d, np_random=np_random, sample_strategy="grid"
-# )
 initial_state_samples = [
-    Model.sample_state_space(
-        num_points=300, np_random=np_random, sample_strategy="random", region=i
+    sample_state_space(
+        system, num_points=10, np_random=np_random, sample_strategy="random", region=i
     )
     for i in range(2)
 ]

@@ -1,6 +1,5 @@
-import numpy as np
 import casadi as cs
-
+import numpy as np
 
 np_random = np.random.default_rng(12)
 
@@ -23,14 +22,16 @@ W = np.array([[15], [25], [9], [6], [8], [10]])
 S = np_random.uniform(-1, 1, (nc, nx))
 
 z_slater = np.zeros((nz, 1))
-lmda = 0.1*np.ones((nc, 1))
+lmda = 0.1 * np.ones((nc, 1))
 
 # demoninator of bound
 qp = {}
 qp["a"] = cs.Sparsity_dense(nc, nz)
 prob = cs.conic("S", "gurobi", qp, {"gurobi.OutputFlag": 0, "error_on_fail": True})
 results = [prob(g=S[j, :], lbx=-x_lim, ubx=x_lim) for j in range(nc)]
-vals = [result["cost"] + W[j, :] - G[j, :] @ z_slater for j, result in enumerate(results)]
+vals = [
+    result["cost"] + W[j, :] - G[j, :] @ z_slater for j, result in enumerate(results)
+]
 min_val = np.min(vals)
 if min_val < 0:
     raise ValueError("Slater vector not correct as min_j g < 0")
@@ -58,13 +59,13 @@ for i in range(num_samples):
         raise ValueError("Slater vector not correct")
 
     # original bound for this x
-    vals = [-G[j, :] @ z_slater + W[j, :] + S[j, :]@x for j in range(nc)]
+    vals = [-G[j, :] @ z_slater + W[j, :] + S[j, :] @ x for j in range(nc)]
     min_val = np.min(vals)
     if min_val < 0:
         raise ValueError("Slater vector not correct as min_j g < 0")
-    result = prob(g=f.T + lmda.T@G, lbx=-z_lim, ubx=z_lim)
-    val = result["cost"] - lmda.T @ (W + S@x)
-    L_ = (f.T@z_slater - val) / min_val
+    result = prob(g=f.T + lmda.T @ G, lbx=-z_lim, ubx=z_lim)
+    val = result["cost"] - lmda.T @ (W + S @ x)
+    L_ = (f.T @ z_slater - val) / min_val
 
     result = prob(g=f.T, a=G, uba=W + S @ x, lbx=-z_lim, ubx=z_lim)
     if not np.isnan(result["cost"].full()).item():
@@ -72,7 +73,9 @@ for i in range(num_samples):
         cost = result["cost"]
         dual_norm = np.linalg.norm(dual, ord=2).item()
         if dual_norm > L_:
-            raise ValueError(f"Original bound {L_} is not correct, dual norm = {dual_norm}")
+            raise ValueError(
+                f"Original bound {L_} is not correct, dual norm = {dual_norm}"
+            )
         dual_norms.append(dual_norm)
 
         theta = np_random.uniform(0, 2 * np.pi)

@@ -1,6 +1,7 @@
 import casadi as cs
 import numpy as np
 from csnlp import Nlp
+from csnlp.util.math import norm_1
 from csnlp.wrappers.mpc.pwa_mpc import PwaMpc, PwaRegion
 
 solver_options = {
@@ -98,13 +99,13 @@ class TimeVaryingAffineMpc(PwaMpc):
             for i in range(len(system["A"]))
         ]
 
-        self.set_time_varying_affine_dynamics(pwa_system)
+        self.set_affine_time_varying_dynamics(pwa_system)
         self.constraint("state_constraints", system["D"] @ x - system["E"], "<=", 0)
         self.constraint("input_constraints", system["F"] @ u - system["G"], "<=", 0)
         if X_f is not None:
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
-        self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
+        self.minimize(norm_1(self, "x", x) + norm_1(self, "u", u))
         self.init_solver(solver_options["gurobi"], solver="gurobi")  # clp
 
 
@@ -143,7 +144,7 @@ class MixedIntegerMpc(PwaMpc):
         if X_f is not None:
             A, b = X_f
             self.constraint("terminal", A @ x[:, -1] - b, "<=", 0)
-        self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
+        self.minimize(norm_1(self, "x", x) + norm_1(self, "u", u))
         self.init_solver(solver_options["gurobi"], solver="gurobi")
 
 
@@ -193,5 +194,5 @@ class TightenedMixedIntegerMpc(PwaMpc):
                 "<=",
                 -eps * np.linalg.norm(A, ord=1, axis=1, keepdims=True),
             )
-        self.minimize(self.norm_1("x", x) + self.norm_1("u", u))
+        self.minimize(norm_1(self, "x", x) + norm_1(self, "u", u))
         self.init_solver(solver_options["gurobi"], solver="gurobi")

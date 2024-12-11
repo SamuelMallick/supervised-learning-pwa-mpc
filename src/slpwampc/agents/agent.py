@@ -132,7 +132,9 @@ class Agent:
                                 x_N, K_term @ x_N
                             )
                             seq = np.vstack((previous_seq[1:], shifted_region))
-                    self.time_varying_affine_mpc.set_sequence(seq.flatten().tolist())
+                    self.time_varying_affine_mpc.set_switching_sequence(
+                        seq.flatten().tolist()
+                    )
                     sol = self.time_varying_affine_mpc.solve({"x_0": x})
                     previous_seq = seq
                 else:
@@ -301,7 +303,7 @@ class Agent:
                             ).reshape(-1, 1)
 
                             for vertex in vertices:
-                                self.time_varying_affine_mpc.set_sequence(
+                                self.time_varying_affine_mpc.set_switching_sequence(
                                     switching_sequence.flatten().tolist()
                                 )
                                 sol = self.time_varying_affine_mpc.solve(

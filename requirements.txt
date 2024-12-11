@@ -6,3 +6,4 @@ scikit-learn>=1.5.1
 polytope>=0.2.5
 gurobipy>=11.0.2
 pyparc>=2.0.4
+csnlp>=1.6.3.post1

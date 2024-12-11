@@ -47,7 +47,7 @@ if GENERATE:
             if delta is None:
                 costs_subopt.append(-1)
             else:
-                time_varying_affine_mpc.set_sequence(delta.flatten().tolist())
+                time_varying_affine_mpc.set_switching_sequence(delta.flatten().tolist())
                 sol = time_varying_affine_mpc.solve({"x_0": x0})
                 if not sol.success:
                     raise ValueError("Infeasible problem for the given delta.")

@@ -266,12 +266,12 @@ class Agent:
                 regions: list[Polytope] = self.classifiers[i].get_partition()
                 all_regions.extend(regions)
 
-                for region in regions:  # TODO remove this check
-                    if not region.is_empty:
-                        x = region.get_point()
-                        label = self.classifiers[i].predict(x)
-                        if label != region.label:
-                            raise ValueError("Region label does not match prediction.")
+                # for region in regions:  # TODO remove this check
+                #     if not region.is_empty:
+                #         x = region.get_point()
+                #         label = self.classifiers[i].predict(x)
+                #         if label != region.label:
+                #             raise ValueError("Region label does not match prediction.")
 
                 infeas_vertices = np.empty((0, self.nx, 1))
                 all_vertices = np.empty((0, self.nx))

@@ -16,7 +16,7 @@ np.random.seed(1)
 
 SAVE = False
 
-N = 5  # prediction horizon
+N = 3  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu
@@ -25,9 +25,9 @@ system_dict = Model.get_system_dict()
 # system.B = [np.array([[1], [1]]), np.array([[1], [1]])]
 # system_dict["B"] = system.B
 
-mixed_integer_mpc = MixedIntegerMpc(system_dict, N, X_f=Model.X_f)
-time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N, X_f=Model.X_f)
-tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.5, X_f=Model.X_f)
+mixed_integer_mpc = MixedIntegerMpc(system_dict, N)
+time_varying_affine_mpc = TimeVaryingAffineMpc(system_dict, N)
+tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.5)
 
 initial_state_samples = [
     sample_state_space(
@@ -68,11 +68,11 @@ x, y, info = agent.train(
     tightened_mpc=tighened_mpc,
     plot=True,
     interactive=True,
-    plot_each_region=True,
+    plot_each_region=False,
 )
 
 if SAVE:
-    agent.save(f"parc_agent_N_{N}")
+    agent.save(f"agent_N_{N}")
     with open(f"training_N_{N}.pkl", "wb") as f:
         pickle.dump(
             {

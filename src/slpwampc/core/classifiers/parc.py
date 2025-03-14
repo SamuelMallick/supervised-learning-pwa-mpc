@@ -109,12 +109,12 @@ class Parc(PARC, PartitionClassifier):
         values = np.zeros(nx - 2)
 
         omega = self.omega
-        gamma = self.gamma + (omega[:, ind] @ values).ravel()
+        gamma = self.gamma  + (omega[:, ind] @ values).ravel()
         omega = np.delete(omega, ind, axis=1)
         xbar = np.delete(self.xbar, ind, axis=1)
         K = self.K
 
-        A_ = np.vstack((self.A, np.zeros((K - 1, 2))))
+        A_ = np.vstack((self.A, np.zeros((K - 1, nx))))
         b_ = np.vstack((self.b, np.zeros((K - 1, 1))))
         regions = list()
 

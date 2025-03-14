@@ -6,6 +6,7 @@ from model import Model
 from mpc import MixedIntegerMpc, TightenedMixedIntegerMpc, TimeVaryingAffineMpc
 
 from slpwampc.agents.agent import Agent
+from slpwampc.core.classifiers.parc import Parc
 from slpwampc.core.classifiers.pwl_sep import PwlSep
 from slpwampc.misc.sampling import sample_state_space
 
@@ -31,30 +32,30 @@ tighened_mpc = TightenedMixedIntegerMpc(system_dict, N, eps=0.5)
 
 initial_state_samples = [
     sample_state_space(
-        system, num_points=10, np_random=np_random, sample_strategy="random", region=i
+        system, num_points=20, np_random=np_random, sample_strategy="random", region=i
     )
     for i in range(2)
 ]
 
-classifiers = [
-    PwlSep(A=np.vstack([S, system.D]), b=np.vstack([T, system.E]))
-    for S, T in zip(system.S, system.T)
-]
-
 # classifiers = [
-#     Parc(
-#         A=np.vstack([S, system.D]),
-#         b=np.vstack([T, system.E]),
-#         K=15,
-#         alpha=1.0e2,
-#         maxiter=150,
-#         sigma=15,
-#         separation="Softmax",
-#         verbose=0,
-#         min_number=1,
-#     )
+#     PwlSep(A=np.vstack([S, system.D]), b=np.vstack([T, system.E]))
 #     for S, T in zip(system.S, system.T)
 # ]
+
+classifiers = [
+    Parc(
+        A=np.vstack([S, system.D]),
+        b=np.vstack([T, system.E]),
+        K=15,
+        alpha=1.0e2,
+        maxiter=150,
+        sigma=15,
+        separation="Softmax",
+        verbose=0,
+        min_number=1,
+    )
+    for S, T in zip(system.S, system.T)
+]
 
 agent = Agent(
     system=system,

@@ -28,7 +28,7 @@ class Model:
 
     # constrol constraints Fu <= G
     F = np.array([[1], [-1]])
-    u_lim = 1
+    u_lim = 5
     G = u_lim * np.array([[1], [1]])
 
     system = {

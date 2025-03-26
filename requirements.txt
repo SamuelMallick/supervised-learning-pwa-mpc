@@ -1,8 +1,9 @@
-numpy>=1.26.4
-gymnasium>=0.29.1
-matplotlib>=3.6
-dmpcpwa>=0.0.2
-scikit-learn>=1.5.1
-polytope>=0.2.5
-gurobipy>=11.0.2
-pyparc>=2.0.4
+numpy==2.2.4
+-e .
+scipy==1.15.2
+casadi==3.6.7
+csnlp==1.6.4
+matplotlib==3.10.1
+gymnasium==1.1.1
+pyparc==2.0.4
+polytope==0.2.5

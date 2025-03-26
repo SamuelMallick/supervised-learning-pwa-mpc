@@ -96,7 +96,7 @@ class PwaEnv(gymnasium.Env):
 
 np.random.seed(1)
 np_random = np.random.default_rng(1)
-SAVE = True
+SAVE = False
 
 num_episodes = 1000
 sim_length = 100

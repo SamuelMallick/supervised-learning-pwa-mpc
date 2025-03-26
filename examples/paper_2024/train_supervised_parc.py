@@ -14,7 +14,7 @@ np.random.seed(1)
 
 SAVE = False
 
-N = 8  # prediction horizon
+N = 12  # prediction horizon
 d = 2  # spacing for initial grid sampling
 
 nx, nu = Model.nx, Model.nu

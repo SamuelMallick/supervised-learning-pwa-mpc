@@ -53,4 +53,3 @@ print(f"std {np.std(t_o)}")
 print(f"min {min(t_o)}")
 print(f"max {max(t_o)}")
 print(f"median {np.median(t_o)}")
-

@@ -29,7 +29,7 @@ The code was created with `Python 3.12`. To access it, clone the repository
 
 ```bash
 git clone https://github.com/SamuelMallick/supervised-learning-pwa-mpc
-cd mpcrl-vehicle-gears
+cd supervised-learning-pwa-mpc
 ```
 
 and then install the required packages by, e.g., running

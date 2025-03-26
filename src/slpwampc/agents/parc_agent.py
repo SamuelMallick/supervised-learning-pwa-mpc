@@ -7,7 +7,6 @@ from slpwampc.core.parc import ParcEnsemble
 from slpwampc.core.systems import PwaSystem
 from slpwampc.misc.action_mapping import PwaActionMapper
 from slpwampc.misc.regions import Polytope
-from slpwampc.utils.tikz import save2tikz
 
 
 class ParcAgent:
@@ -129,7 +128,9 @@ class ParcAgent:
                                 x_N, K_term @ x_N
                             )
                             seq = np.vstack((previous_seq[1:], shifted_region))
-                    self.time_varying_affine_mpc.set_sequence(seq.flatten().tolist())
+                    self.time_varying_affine_mpc.set_switching_sequence(
+                        seq.flatten().tolist()
+                    )
                     sol = self.time_varying_affine_mpc.solve({"x_0": x})
                     previous_seq = seq
                 else:
@@ -259,7 +260,7 @@ class ParcAgent:
                             ).reshape(-1, 1)
 
                             for vertex in vertices:
-                                self.time_varying_affine_mpc.set_sequence(
+                                self.time_varying_affine_mpc.set_switching_sequence(
                                     switching_sequence.flatten().tolist()
                                 )
                                 sol = self.time_varying_affine_mpc.solve(

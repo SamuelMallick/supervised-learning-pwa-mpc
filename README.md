@@ -13,11 +13,13 @@ In this work we propose a learning-based model predictive controller for piecewi
 If you find the paper or this repository helpful in your publications, please consider citing it.
 
 ```bibtex
-@article{mallick2025learning,
-  title={Learning-Based Model Predictive Control for Piecewise Affine Systems with Feasibility Guarantees},
+@inproceedings{mallick2025learning,
+  title={Learning-based model predictive control for piecewise affine systems with feasibility guarantees},
   author={Mallick, Samuel and Dabiri, Azita and De Schutter, Bart},
-  journal={arXiv preprint arXiv:2412.00490},
-  year={2025}
+  booktitle={2025 European Control Conference (ECC)},
+  pages={345--350},
+  year={2025},
+  organization={IEEE}
 }
 ```
 
